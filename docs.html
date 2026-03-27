@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/getBot.css">
+    <script src="scripts/theme.js"></script>
+    <style>
+        .docs-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .docs-content h2 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .doc-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .doc-section h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .doc-section h3 .step-number {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .doc-section p {
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .doc-section strong {
+            color: var(--accent-secondary);
+        }
+
+        .settings-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+
+        .settings-list li {
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent-primary);
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .settings-list li strong {
+            color: var(--accent-primary);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .tip-box {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .tip-box i {
+            margin-right: 8px;
+        }
+
+        .tip-box strong {
+            color: var(--bg-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="search-bar">
+            <button class="search-btn" id="backBtn" onclick="window.location.href = './'">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <div class="docs-content">
+            <h2><i class="fa-solid fa-book"></i> Documentation</h2>
+
+            <div class="doc-section">
+                <h3><span class="step-number">1</span> Getting Bots</h3>
+                <p>To add a bot to your library:</p>
+                <ol>
+                    <li>Open the <strong>left sidebar</strong></li>
+                    <li>Click <strong>"Add Bot"</strong></li>
+                    <li>Choose one of the following options:
+                        <ul>
+                            <li><strong>Upload Image:</strong> Provide a character card image</li>
+                            <li><strong>Browse Directory:</strong> Explore available characters</li>
+                        </ul>
+                    </li>
+                    <li>Click <strong>"Add"</strong> on any character card to add it to your library</li>
+                </ol>
+            </div>
+
+            <div class="doc-section">
+                <h3><span class="step-number">2</span> Customization</h3>
+                <p>Personalize Kiwi's appearance:</p>
+                <ol>
+                    <li>Open the <strong>right sidebar</strong></li>
+                    <li>Click <strong>"Customize"</strong></li>
+                    <li>Choose your preferences:
+                        <ul>
+                            <li><strong>Theme Color:</strong> Pick any color for the app theme</li>
+                            <li><strong>Background:</strong> Upload a custom image or GIF</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="doc-section">
+                <h3><span class="step-number">3</span> Generation Settings</h3>
+                <p>Control how the LLM responds to you. Access these settings via <strong>right sidebar → Generation</strong>:</p>
+                <ul class="settings-list">
+                    <li>
+                        <strong>Max Tokens</strong>
+                        Limits the maximum response length. (1 token ≈ 4 characters / ~1 word)
+                    </li>
+                    <li>
+                        <strong>Temperature</strong>
+                        Controls creativity vs. accuracy. Higher = more creative (risk of gibberish at 1+). Lower = more focused.
+                    </li>
+                    <li>
+                        <strong>Top P</strong>
+                        Adjusts word selection diversity. Higher = more varied vocabulary. Lower = more predictable.
+                    </li>
+                    <li>
+                        <strong>Frequency Penalty</strong>
+                        Reduces repetition. Too high may cause unnatural responses.
+                    </li>
+                    <li>
+                        <strong>Presence Penalty</strong>
+                        Similar to frequency penalty, but increases with repeated word usage.
+                    </li>
+                </ul>
+                <div class="tip-box">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <strong>Tip:</strong> Start with default values and adjust gradually to find your preferred balance.
+                </div>
+            </div>
+
+            <div class="doc-section">
+                <h3><span class="step-number">4</span> LLM Settings</h3>
+                <p>Configure how the AI behaves. Access via <strong>right sidebar → LLM Settings</strong>:</p>
+                <ul class="settings-list">
+                    <li>
+                        <strong>Prompt Input</strong>
+                        Custom instructions that guide the AI's behavior and speaking style.
+                    </li>
+                    <li>
+                        <strong>Preset Selector</strong>
+                        Quick-toggle between saved prompt configurations for easy switching between different AI personalities.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

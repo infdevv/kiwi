@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/getBot.css">
+    <script src="scripts/theme.js?t=1"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="search-bar">
+            <button class="search-btn" id="backBtn" onclick="window.location.href = './'">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <div class="search-input-wrapper">
+                <input type="text" id="searchInput" placeholder="Search for characters...">
+            </div>
+            <button class="search-btn" id="searchBtn">
+                <i class="fa-solid fa-search"></i> Search
+            </button>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <i class="fa-solid fa-spinner"></i>
+            <p>Loading presets...</p>
+        </div>
+
+        <div id="noResults" class="no-results" style="display: none;">
+            <i class="fa-solid fa-search"></i>
+            <p>No presets found</p>
+        </div>
+
+        <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+
+    <script src="scripts/ui/getPreset.js"></script>
+</body>
+
+</html>

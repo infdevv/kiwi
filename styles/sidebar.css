@@ -1,0 +1,333 @@
+/* Sidebar Styles */
+
+.sidebar {
+  width: 280px;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-default);
+  position: fixed;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: calc(16px + env(safe-area-inset-top)) 16px 16px 16px;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.sidebar-left {
+  left: 0;
+  border-right: 1px solid var(--border-default);
+  transform: translateX(-100%);
+}
+
+.sidebar-right {
+  right: 0;
+  border-left: 1px solid var(--border-default);
+  transform: translateX(100%);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  font-weight: 600;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.sidebar-close {
+  user-select: none;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100dvh;
+  background-color: var(--overlay-bg-light);
+  z-index: 99;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Sidebar Tabs */
+.sidebar-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: 12px;
+}
+
+.sidebar-tab {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-tab:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.sidebar-tab.active {
+  color: var(--accent-primary);
+  background-color: var(--bg-elevated);
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Sidebar Tab Content */
+.sidebar-tab-content {
+  display: none;
+}
+
+.sidebar-tab-content.active {
+  display: block;
+}
+
+/* Bot Items */
+.bot {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+  height: 50px;
+  border: 1px solid var(--border-default);
+  padding: 8px;
+  user-select: none;
+  cursor: pointer;
+  border-radius: 8px;
+  position: relative;
+}
+
+.bot img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  position: absolute;
+}
+
+.bot .bot-name {
+  margin-left: 58px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chat Items */
+.chat-item img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  position: absolute;
+}
+
+.chat-item .bot-name {
+  margin-left: 58px;
+}
+
+.chat-item .delete-btn {
+  position: absolute;
+  right: 12px;
+  font-size: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.chat-item .delete-btn:hover {
+  background-color: var(--bg-elevated);
+  color: #ef4444;
+}
+
+.add {
+  width: 50px;
+  height: 50px;
+  font-size: 31px;
+  display: flex;
+  margin-right: 5px;
+  align-items: center;
+  justify-content: center;
+}
+
+.bot .delete-btn {
+  position: absolute;
+  right: 12px;
+  font-size: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.bot .delete-btn:hover {
+  background-color: var(--bg-elevated);
+  color: #ef4444;
+}
+
+/* Dialogs */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100dvh;
+  background-color: var(--overlay-bg);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-overlay.active {
+  display: flex;
+}
+
+.dialog {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+}
+
+.dialog h3 {
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Persona Dialog Styles */
+#personaAvatarPreview {
+  text-align: center;
+}
+
+#personaAvatarPreviewImg {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+}
+
+/* Persona Items */
+.persona {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+  height: 50px;
+  border: 1px solid var(--border-default);
+  padding: 8px;
+  user-select: none;
+  cursor: pointer;
+  border-radius: 8px;
+  position: relative;
+}
+
+.persona img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  position: absolute;
+}
+
+.persona .persona-name {
+  margin-left: 58px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.persona .persona-description {
+  margin-left: 58px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 70px);
+}
+
+.persona .delete-btn {
+  position: absolute;
+  right: 12px;
+  font-size: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.persona .delete-btn:hover {
+  background-color: var(--bg-elevated);
+  color: #ef4444;
+}

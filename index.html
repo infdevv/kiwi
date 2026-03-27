@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="styles/index.css?t=8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+    <script type="module">
+        import { marked } from 'https://cdn.jsdelivr.net/npm/marked@12.0.0/+esm';
+        window.marked = marked;
+    </script>
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="dialog-overlay" id="uploadDialog">
+        <div class="dialog">
+            <h3>Add New Bot</h3>
+            <p style="margin-bottom: 16px; color: #888; font-size: 0.9rem;">Choose how to add a bot:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <button class="btn" onclick="browseBots()" style="width: 100%; height: 48px;">
+                    <span class="material-symbols-outlined"
+                        style="vertical-align: middle; margin-right: 8px;">search</span>
+                    Browse Bots
+                </button>
+                <button class="btn" onclick="showImageUpload()" style="width: 100%; height: 48px;">
+                    <span class="material-symbols-outlined"
+                        style="vertical-align: middle; margin-right: 8px;">upload</span>
+                    Upload Image
+                </button>
+            </div>
+            <div id="imageUploadSection" style="display: none;">
+                <p style="margin-bottom: 8px; color: #888; font-size: 0.85rem;">Upload a character card image (PNG with
+                    character metadata)</p>
+                <input type="file" id="botImageInput" accept="image/*">
+            </div>
+            <div class="dialog-buttons">
+                <button class="btn" id="cancelUploadBtn">Cancel</button>
+                <button class="btn" id="confirmUploadBtn" style="display: none;">Add
+                    Bot</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="presetDialog">
+        <div class="dialog">
+            <h3>Select Preset</h3>
+            <p style="margin-bottom: 16px; color: #888; font-size: 0.9rem;">Choose how to select a preset:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <button class="btn" onclick="browsePresets()" style="width: 100%; height: 48px;">
+                    <span class="material-symbols-outlined"
+                        style="vertical-align: middle; margin-right: 8px;">search</span>
+                    Browse Presets
+                </button>
+                <button class="btn" onclick="showPresetUpload()" style="width: 100%; height: 48px;">
+                    <span class="material-symbols-outlined"
+                        style="vertical-align: middle; margin-right: 8px;">upload</span>
+                    Upload JSON
+                </button>
+            </div>
+            <div id="presetUploadSection" style="display: none;">
+                <p style="margin-bottom: 8px; color: #888; font-size: 0.85rem;">Upload a preset JSON file</p>
+                <input type="file" id="presetFileInput" accept=".json">
+            </div>
+            <div class="dialog-buttons">
+                <button class="btn" id="cancelPresetBtn">Cancel</button>
+                <button class="btn" id="confirmPresetBtn" style="display: none;">Load Preset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="confirmDialog">
+        <div class="dialog">
+            <h3 id="confirmDialogTitle">Confirm</h3>
+            <p id="confirmDialogMessage" style="margin-bottom: 16px; color: #888; font-size: 0.9rem;">Are you sure?</p>
+            <div class="dialog-buttons">
+                <button class="btn" id="confirmDialogCancel">Cancel</button>
+                <button class="btn" id="confirmDialogConfirm" style="background-color: #ef4444; border-color: #ef4444;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="chatChoiceDialog">
+        <div class="dialog">
+            <h3 id="chatChoiceDialogTitle">Continue Chat?</h3>
+            <p id="chatChoiceDialogMessage" style="margin-bottom: 16px; color: #888; font-size: 0.9rem;">You have existing chats with this bot.</p>
+            <div class="dialog-buttons" style="flex-direction: column; gap: 10px;">
+                <button class="btn" id="chatChoiceNewBtn" style="width: 100%;">
+                    Start New Chat
+                </button>
+                <button class="btn" id="chatChoiceRecentBtn" style="width: 100%;">
+                    Continue Most Recent Chat
+                </button>
+                <button class="btn" id="chatChoiceCancelBtn" style="width: 100%;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="personaDialog">
+        <div class="dialog">
+            <h3>Add New Persona</h3>
+            <p style="margin-bottom: 16px; color: #888; font-size: 0.9rem;">Create a persona to define your role in conversations.</p>
+            <div class="form">
+                <label for="personaNameInput">Name</label>
+                <input type="text" id="personaNameInput" placeholder="e.g., Curious Student, Detective, etc.">
+                
+                <label for="personaDescriptionInput">Description</label>
+                <textarea id="personaDescriptionInput" placeholder="Brief description of your persona..." style="min-height: 80px;"></textarea>
+                
+                <label for="personaAvatarInput">Avatar (optional)</label>
+                <input type="file" id="personaAvatarInput" accept="image/*">
+                <div id="personaAvatarPreview" style="display: none; margin-top: 8px;">
+                    <img id="personaAvatarPreviewImg" src="" alt="Avatar Preview" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-default);">
+                </div>
+            </div>
+            <div class="dialog-buttons" style="margin-top: 16px;">
+                <button class="btn" id="cancelPersonaBtn">Cancel</button>
+                <button class="btn" id="confirmPersonaBtn" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); border: none;">Create Persona</button>
+            </div>
+        </div>
+    </div>
+
+    <aside class="sidebar sidebar-left" id="leftSidebar">
+        <div style="display: flex;">
+            <h3 style="margin-top: 7px;" class="logo">KiwiAI</h3>
+            <div class="sidebar-close material-symbols-outlined" onclick="toggleLeftSidebar()"
+                style="margin-left: auto;">
+                close
+            </div>
+        </div>
+        <div class="sidebar-tabs">
+            <button class="sidebar-tab active" data-tab="bots-tab" onclick="switchLeftSidebarTab('bots-tab')">
+                <span class="material-symbols-outlined">smart_toy</span>
+            </button>
+            <button class="sidebar-tab" data-tab="chats-tab" onclick="switchLeftSidebarTab('chats-tab')">
+                <span class="material-symbols-outlined">chat</span>
+            </button>
+            <button class="sidebar-tab" data-tab="personas-tab" onclick="switchLeftSidebarTab('personas-tab')">
+                <span class="material-symbols-outlined">comedy_mask</span>
+            </button>
+        </div>
+        <div class="sidebar-content" id="bots-tab-content">
+            <div class="bot" id="addBotBtn">
+                <span class="material-symbols-outlined add">add</span>
+                <p class="bot-name">Add Bot</p>
+            </div>
+        </div>
+        <div class="sidebar-content" id="chats-tab-content" style="display: none;">
+            <div class="no-chats" style="display: none; text-align: center; color: #888; padding: 20px;">
+                <span class="material-symbols-outlined" style="font-size: 48px; opacity: 0.5;">chat_bubble</span>
+                <p>No chats yet</p>
+            </div>
+        </div>
+        <div class="sidebar-content" id="personas-tab-content" style="display: none;">
+            <div class="bot" id="addPersonaBtn">
+                <span class="material-symbols-outlined add">add</span>
+                <p class="persona-name">Add Persona</p>
+            </div>
+        </div> 
+    </aside>
+
+    <aside class="sidebar sidebar-right" id="rightSidebar">
+        <div class="sidebar-close material-symbols-outlined" onclick="toggleRightSidebar()">
+            close
+        </div>
+        <div class="sidebar-content">
+            <br>
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="api-tab" onclick="switchSidebarTab('api-tab')">
+                    <span class="material-symbols-outlined">link</span>
+                </button>
+                <button class="sidebar-tab" data-tab="generation-tab" onclick="switchSidebarTab('generation-tab')">
+                    <span class="material-symbols-outlined">tune</span>
+                </button>
+                <button class="sidebar-tab" data-tab="preset-tab" onclick="switchSidebarTab('preset-tab')">
+                    <span class="material-symbols-outlined">folder_open</span>
+                </button>
+                <button class="sidebar-tab" data-tab="customize-tab" onclick="switchSidebarTab('customize-tab')">
+                    <span class="material-symbols-outlined">brush</span>
+                </button>
+            </div>
+            <div class="sidebar-tab-content active" id="api-tab">
+                <h3 class="sidebar-header">API Connection</h3>
+                <div class="form">
+                    <label for="apiEndpoint">API Endpoint</label>
+                    <input type="text" id="apiEndpoint" placeholder="API Base URL">
+
+                    <label for="apiKey">API Key</label>
+                    <input type="text" id="apiKey" placeholder="sk-...">
+
+                    <label for="apiModel">Model</label>
+                    <input type="text" id="apiModel" placeholder="gpt-5.4, opus-4.6, etc">
+                    <div style="display: flex;">
+                        <label class="switch">
+                            <input type="checkbox" id="streamingToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <p style="margin-top: 15px; margin-left: 10px;">Text-Streaming</p>
+                    </div>
+                    <button class="btn save-api-btn" id="saveApiBtn">Save Configuration</button>
+                </div>
+            </div>
+            <div class="sidebar-tab-content" id="generation-tab">
+                <h3 class="sidebar-header">Generation Settings</h3>
+                <div class="form">
+                    <label for="contextLength">Context Length (Default: 0 = unlimited)</label>
+                    <input type="number" id="contextLength" placeholder="Context Length" value="0">
+                    <label for="maxTokens">Max Tokens (Default: 4000)</label>
+                    <input type="number" id="maxTokens" placeholder="Max Tokens" value="4000">
+                    <label for="temperature">Temperature (Default: 0.6)</label>
+                    <input type="number" id="temperature" placeholder="Temperature" value="0.6">
+                    <label for="topP">Top P (Default: 0)</label>
+                    <input type="number" id="topP" placeholder="Top P" value="0">
+                    <label for="frequencyPenalty">Frequency Penalty (Default: 0)</label>
+                    <input type="number" id="frequencyPenalty" placeholder="Frequency Penalty" value="0">
+                    <label for="presencePenalty">Presence Penalty (Default: 0)</label>
+                    <input type="number" id="presencePenalty" placeholder="Presence Penalty" value="0">
+                </div>
+            </div>
+            <div class="sidebar-tab-content" id="customize-tab">
+                <h3 class="sidebar-header">Customization</h3>
+                <div class="form">
+                    <label for="color">Theme Color (generates full palette)</label>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <input type="color" id="color" value="#3cd67c" style="width: 60px; height: 40px; cursor: pointer;">
+                        <div id="colorPreview" style="display: flex; gap: 4px; flex: 1;">
+                            <div id="previewPrimary" style="width: 30px; height: 30px; border-radius: 4px; border: 1px solid #333;" title="Primary Accent"></div>
+                            <div id="previewSecondary" style="width: 30px; height: 30px; border-radius: 4px; border: 1px solid #333;" title="Secondary Accent"></div>
+                            <div id="previewHighlight" style="width: 30px; height: 30px; border-radius: 4px; border: 1px solid #333;" title="Highlight"></div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 12px 0; color: #fff; font-size: 0.95rem;">Individual Colors</h4>
+                    
+                    <label>Background Colors</label>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Primary</span>
+                        <input type="color" id="bgPrimaryPicker" class="individualColorPicker" data-color="bgPrimary" value="#070707">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Secondary</span>
+                        <input type="color" id="bgSecondaryPicker" class="individualColorPicker" data-color="bgSecondary" value="#0a0a0a">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Tertiary</span>
+                        <input type="color" id="bgTertiaryPicker" class="individualColorPicker" data-color="bgTertiary" value="#0f0f0f">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Elevated</span>
+                        <input type="color" id="bgElevatedPicker" class="individualColorPicker" data-color="bgElevated" value="#161616">
+                    </div>
+                    
+                    <label>Border Colors</label>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Default</span>
+                        <input type="color" id="borderDefaultPicker" class="individualColorPicker" data-color="borderDefault" value="#1a1a1a">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Light</span>
+                        <input type="color" id="borderLightPicker" class="individualColorPicker" data-color="borderLight" value="#2a2a2a">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Medium</span>
+                        <input type="color" id="borderMediumPicker" class="individualColorPicker" data-color="borderMedium" value="#3a3a3a">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Highlight</span>
+                        <input type="color" id="borderHighlightPicker" class="individualColorPicker" data-color="borderHighlight" value="#4a4a4a">
+                    </div>
+                    
+                    <label>Text Colors</label>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Primary</span>
+                        <input type="color" id="textPrimaryPicker" class="individualColorPicker" data-color="textPrimary" value="#ffffff">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Secondary</span>
+                        <input type="color" id="textSecondaryPicker" class="individualColorPicker" data-color="textSecondary" value="#888888">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Muted</span>
+                        <input type="color" id="textMutedPicker" class="individualColorPicker" data-color="textMuted" value="#666666">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Disabled</span>
+                        <input type="color" id="textDisabledPicker" class="individualColorPicker" data-color="textDisabled" value="#333333">
+                    </div>
+                    
+                    <label>Accent Colors</label>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Primary</span>
+                        <input type="color" id="accentPrimaryPicker" class="individualColorPicker" data-color="accentPrimary" value="#3cd67c">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Secondary</span>
+                        <input type="color" id="accentSecondaryPicker" class="individualColorPicker" data-color="accentSecondary" value="#75e772">
+                    </div>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Highlight</span>
+                        <input type="color" id="accentHighlightPicker" class="individualColorPicker" data-color="accentHighlight" value="#4a9eff">
+                    </div>
+                    
+                    <label>Other Colors</label>
+                    <div class="colorPickerRow">
+                        <span class="colorPickerLabel">Message BG</span>
+                        <input type="color" id="messageBgPicker" class="individualColorPicker" data-color="messageBg" value="#1a1a1a">
+                    </div>
+                    
+                    <button class="btn" onclick="ThemeManager.resetToDefault()" style="width: 100%; margin-top: 16px; margin-bottom: 12px;">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">refresh</span>
+                        Reset to Default
+                    </button>
+                    <label for="background">Background Image/Gif</label>
+                    <input type="file" id="background" accept="image/*, video/*">
+                    <button class="btn" id="clearBgBtn" style="width: 100%; margin-top: 8px;">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">delete</span>
+                        Clear Background
+                    </button>
+                </div>
+                <br>
+            </div>
+            <div class="sidebar-tab-content" id="preset-tab">
+                <h3 class="sidebar-header">Preset Settings</h3>
+                <div class="form">
+                    <label for="maxTokens">Max Tokens (Default: 4000)</label>
+                    <div id="presetToggles">
+                        <p>Using: <span id="presetName">No Preset</span></p>
+                        <button onclick="openPresetDialog()">Get Preset</button>
+                        <br>
+                        <div class="presetItem">
+                            <label class="switch">
+                            <input type="checkbox" id="presetStreamingToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <p style="margin-top: 15px; margin-left: 10px;">Text-Streaming</p>
+                        </div>
+                    </div>
+                </div>
+                <br>
+                <h3 class="sidebar-header">Prompt Settings</h3>
+                <div class="form">
+                    <label>Injected into the system prompt</label>
+                    <textarea id="prompt" placeholder="Write or paste your prompt here"></textarea>
+                    <label>Where to inject</label>
+                    <select id="promptLocation">
+                        <option value="before">Before system (Default)</option>
+                        <option value="after">After system</option>
+                    </select>
+                </div>
+                <center>
+                    <br>
+                    <p>Credits are <a href="credits.html" style="color: white;">here</a></p>
+                </center>
+            </div>
+        </div>
+    </aside>
+
+    <div class="top-bar">
+        <span class="material-symbols-outlined menutoggle" onclick="toggleLeftSidebar()">
+            menu
+        </span>
+        <span class="chat-name">Select a Bot</span>
+        <span class="material-symbols-outlined menutoggle" onclick="toggleRightSidebar()">
+            settings
+        </span>
+    </div>
+
+    <div class="chat-container">
+        <div class="message user-message" style="display: none;">
+            <img src="https://cataas.com/cat" class="message-avatar" alt="Avatar">
+            <div class="message-content">
+                <p class="message-name">Bot Name</p>
+                <span class="message-text">Hello</span>
+            </div>
+        </div>
+        <div class="message ai-message" style="display: none;">
+            <img src="https://cataas.com/cat" class="message-avatar" alt="Avatar">
+            <div class="message-content">
+                <p class="message-name">Bot Name</p>
+                <span class="message-text">Hello</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-controls">
+        <input placeholder="Send a message" id="messageInput">
+        <span class="material-symbols-outlined btn" id="sendBtn">
+            send
+        </span>
+    </div>
+
+    <script src="scripts/theme.js?t=1"></script>
+    <script src="./scripts/ui/index_ui.js?t=3"></script>
+    <script src="./scripts/ui/chatRenderer_inline.js?t=1"></script>
+    <script type="module" src="./scripts/ui/index_modular.js?t=1"></script>
+</body>
+
+</html>
