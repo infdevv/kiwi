@@ -312,15 +312,26 @@ class StorageManager {
                 });
 
                 // Delete the associated chats
-                chatsToDelete.forEach(chat => {
-                    chatStore.delete(chat.id);
-                });
+                let pendingDeletes = chatsToDelete.length;
 
-                // Then delete the bot
-                const deleteBotRequest = botStore.delete(bot_id);
+                const afterDeletes = () => {
+                    const deleteBotRequest = botStore.delete(bot_id);
+                    deleteBotRequest.onsuccess = () => resolve({ deletedChats: chatsToDelete.map(c => c.id) });
+                    deleteBotRequest.onerror = () => reject(deleteBotRequest.error);
+                };
 
-                deleteBotRequest.onsuccess = () => resolve({ deletedChats: chatsToDelete.map(c => c.id) });
-                deleteBotRequest.onerror = () => reject(deleteBotRequest.error);
+                if (pendingDeletes === 0) {
+                    afterDeletes();
+                } else {
+                    chatsToDelete.forEach(chat => {
+                        const req = chatStore.delete(chat.id);
+                        req.onsuccess = () => {
+                            pendingDeletes--;
+                            if (pendingDeletes === 0) afterDeletes();
+                        };
+                        req.onerror = () => reject(req.error);
+                    });
+                }
             };
 
             getAllChatsRequest.onerror = () => reject(getAllChatsRequest.error);

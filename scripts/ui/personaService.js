@@ -61,12 +61,9 @@ const PersonaService = {
 
     personaEl.innerHTML = `
       ${hasAvatar ? `<img src="${this.escapeHtml(avatarUrl)}" alt="${this.escapeHtml(personaData.name)}">` : ""}
-      <div style="${hasAvatar ? "margin-left: 58px;" : ""}">
-        <p class="persona-name">${this.escapeHtml(personaData.name)}</p>
-        <p class="persona-description">${this.escapeHtml(personaData.description || "No description")}</p>
-      </div>
-      <span class="material-symbols-outlined edit-btn" onclick="window.editPersona(event, '${personaId}')" style="margin-right:4px;">edit</span>
-      <span class="material-symbols-outlined delete-btn" onclick="window.deletePersona(event, '${personaId}')">delete</span>
+      <p class="persona-name">${this.escapeHtml(personaData.name)}</p>
+      <span class="material-symbols-outlined edit-btn" onclick="window.editPersona(event, '${personaId}')" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);font-size:20px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:4px;cursor:pointer;color:var(--text-secondary);">edit</span>
+      <span class="material-symbols-outlined delete-btn" onclick="window.deletePersona(event, '${personaId}')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:20px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:4px;cursor:pointer;color:var(--text-secondary);">delete</span>
     `;
 
     // Insert before the add button

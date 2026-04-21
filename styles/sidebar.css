@@ -147,8 +147,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: calc(100% - 90px);
-  margin-right: 32px;
+  max-width: calc(100% - 100px);
+  margin-right: 0;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 /* Chat Items */
@@ -161,12 +163,13 @@
 }
 
 .chat-item .bot-name {
-  margin-left: 58px;
-  max-width: calc(100% - 90px);
-  margin-right: 32px;
+  margin-left: 0;
+  max-width: 100%;
+  margin-right: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .chat-item .delete-btn {
@@ -338,18 +341,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: calc(100% - 90px);
-  margin-right: 32px;
-}
-
-.persona .persona-description {
-  margin-left: 58px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: calc(100% - 70px);
+  max-width: calc(100% - 140px);
+  margin-right: 0;
 }
 
 .persona .delete-btn {
