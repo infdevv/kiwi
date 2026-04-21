@@ -65,6 +65,7 @@ const PersonaService = {
         <p class="persona-name">${this.escapeHtml(personaData.name)}</p>
         <p class="persona-description">${this.escapeHtml(personaData.description || "No description")}</p>
       </div>
+      <span class="material-symbols-outlined edit-btn" onclick="window.editPersona(event, '${personaId}')" style="margin-right:4px;">edit</span>
       <span class="material-symbols-outlined delete-btn" onclick="window.deletePersona(event, '${personaId}')">delete</span>
     `;
 
@@ -76,20 +77,124 @@ const PersonaService = {
       personasContainer.appendChild(personaEl);
     }
 
-    // Add click handler to open/edit persona
+    // Add click handler to select persona
     personaEl.addEventListener("click", (e) => {
       if (e.target.classList.contains("delete-btn")) return;
-      this.openPersonaEditor(personaId, personaData, storageManager);
+      if (e.target.classList.contains("edit-btn")) return;
+      this.selectPersona(personaId, storageManager);
     });
+
+    // Restore selected state if this persona was previously selected
+    const selectedPersonaId = sessionStorage.getItem("selectedPersonaId");
+    if (selectedPersonaId === personaId) {
+      personaEl.classList.add("selected");
+    }
   },
 
   /**
    * Open persona editor dialog
    */
   async openPersonaEditor(personaId, personaData, storageManager) {
-    // For now, just show an alert - can be expanded to full editor
-    console.log("[PersonaService] Opening editor for persona:", personaId);
-    // TODO: Implement full persona editor dialog
+    // Build modal HTML
+    const existing = document.getElementById("personaEditorDialog");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "personaEditorDialog";
+    overlay.className = "dialog-overlay active";
+    overlay.innerHTML = `
+      <div class="dialog dialog-large">
+        <h3>Edit Persona</h3>
+        <div class="form">
+          <label>Name</label>
+          <input type="text" id="peNameInput" placeholder="Persona name" value="${this.escapeHtml(personaData.name || "")}">
+
+          <label>Description</label>
+          <textarea id="peDescriptionInput" placeholder="Brief description..." style="min-height: 70px;">${this.escapeHtml(personaData.description || "")}</textarea>
+
+          <label>Persona (how you act in chats)</label>
+          <textarea id="pePersonaInput" placeholder="Describe your role and behaviour..." style="min-height: 80px;">${this.escapeHtml(personaData.persona || "")}</textarea>
+
+          <label>Scenario (optional)</label>
+          <textarea id="peScenarioInput" placeholder="Current scenario..." style="min-height: 60px;">${this.escapeHtml(personaData.scenario || "")}</textarea>
+
+          <label>Example Messages (optional)</label>
+          <textarea id="peMesExampleInput" placeholder="Example dialogue..." style="min-height: 60px;">${this.escapeHtml(personaData.mes_example || "")}</textarea>
+
+          <label>System Prompt (optional)</label>
+          <textarea id="peSystemPromptInput" placeholder="Additional system instructions..." style="min-height: 60px;">${this.escapeHtml(personaData.system_prompt || "")}</textarea>
+
+          <label>Avatar</label>
+          <input type="file" id="peAvatarFile" accept="image/*" style="display:none;">
+          <button class="btn" onclick="document.getElementById('peAvatarFile').click()" style="width:100%;margin-top:8px;margin-bottom:8px;">
+            <span class="material-symbols-outlined" style="vertical-align:middle;margin-right:8px;">image</span>
+            Upload Avatar
+          </button>
+          <div id="peAvatarPreview" style="display:${personaData.avatar ? "block" : "none"};margin-top:8px;">
+            <img id="peAvatarPreviewImg" src="${this.escapeHtml(personaData.avatar || "")}" alt="Avatar Preview" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-default);">
+          </div>
+        </div>
+        <div class="dialog-buttons" style="margin-top:16px;">
+          <button class="btn" id="cancelPersonaEditorBtn">Cancel</button>
+          <button class="btn" id="confirmPersonaEditorBtn" style="background:linear-gradient(135deg,var(--gradient-start),var(--gradient-end));border:none;">Save Persona</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    let newAvatarData = null;
+
+    document.getElementById("peAvatarFile").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      newAvatarData = await this.readFileAsDataURL(file);
+      document.getElementById("peAvatarPreviewImg").src = newAvatarData;
+      document.getElementById("peAvatarPreview").style.display = "block";
+    });
+
+    document.getElementById("cancelPersonaEditorBtn").addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+
+    document.getElementById("confirmPersonaEditorBtn").addEventListener("click", async () => {
+      const updated = {
+        ...personaData,
+        name: document.getElementById("peNameInput").value.trim() || personaData.name,
+        description: document.getElementById("peDescriptionInput").value.trim(),
+        persona: document.getElementById("pePersonaInput").value.trim(),
+        scenario: document.getElementById("peScenarioInput").value.trim(),
+        mes_example: document.getElementById("peMesExampleInput").value.trim(),
+        system_prompt: document.getElementById("peSystemPromptInput").value.trim(),
+        avatar: newAvatarData || personaData.avatar || ""
+      };
+
+      try {
+        await storageManager.updatePersona(personaId, updated);
+
+        // Refresh selected persona in session if this one is active
+        const selectedId = sessionStorage.getItem("selectedPersonaId");
+        if (selectedId === personaId) {
+          sessionStorage.setItem("selectedPersona", JSON.stringify({ ...updated, id: personaId }));
+        }
+
+        // Update UI card
+        const el = document.querySelector(`[data-persona-id="${personaId}"]`);
+        if (el) {
+          const nameEl = el.querySelector(".persona-name");
+          const descEl = el.querySelector(".persona-description");
+          const imgEl = el.querySelector("img");
+          if (nameEl) nameEl.textContent = updated.name;
+          if (descEl) descEl.textContent = updated.description || "No description";
+          if (imgEl && updated.avatar) imgEl.src = updated.avatar;
+        }
+
+        overlay.remove();
+        console.log("[PersonaService] Persona updated:", personaId);
+      } catch (err) {
+        console.error("[PersonaService] Error updating persona:", err);
+        alert("Error saving persona: " + err.message);
+      }
+    });
   },
 
   /**
@@ -102,7 +207,7 @@ const PersonaService = {
 
     const name = nameInput.value.trim() || "Unnamed Persona";
     const description = descriptionInput.value.trim();
-    
+
     let avatarUrl = "";
     if (avatarInput.files && avatarInput.files[0]) {
       const file = avatarInput.files[0];
@@ -124,14 +229,103 @@ const PersonaService = {
     try {
       const personaId = await storageManager.savePersona(personaData);
       personaData.id = personaId;
-      
+
       this.addPersonaToUI(personaId, personaData, storageManager);
       DialogService.closePersonaDialog();
-      
+
       console.log("[PersonaService] Persona created successfully:", personaId);
     } catch (error) {
       console.error("[PersonaService] Error creating persona:", error);
       alert("Error creating persona: " + error.message);
+    }
+  },
+
+  /**
+   * Get the currently selected persona (from sessionStorage)
+   */
+  getSelectedPersona() {
+    const selectedPersonaId = sessionStorage.getItem("selectedPersonaId");
+    if (!selectedPersonaId) return null;
+
+    // Try to get full persona data from sessionStorage first
+    const storedPersona = sessionStorage.getItem("selectedPersona");
+    if (storedPersona) {
+      try {
+        return JSON.parse(storedPersona);
+      } catch (e) {
+        console.error("[PersonaService] Failed to parse stored persona:", e);
+      }
+    }
+
+    // Fallback to DOM extraction
+    const personaEl = document.querySelector(`[data-persona-id="${selectedPersonaId}"]`);
+    if (!personaEl) return null;
+
+    return {
+      id: selectedPersonaId,
+      name: personaEl.querySelector(".persona-name")?.textContent || "Unknown",
+      description: personaEl.querySelector(".persona-description")?.textContent || "",
+      avatar: personaEl.querySelector("img")?.src || ""
+    };
+  },
+
+  /**
+   * Select a persona for use in chats
+   */
+  async selectPersona(personaId, storageManager) {
+    try {
+      const persona = await storageManager.loadPersona(personaId);
+      sessionStorage.setItem("selectedPersonaId", personaId);
+      sessionStorage.setItem("selectedPersona", JSON.stringify(persona));
+
+      // Update UI to show selected state
+      document.querySelectorAll(".persona").forEach(el => {
+        el.classList.remove("selected");
+      });
+      const selectedEl = document.querySelector(`[data-persona-id="${personaId}"]`);
+      if (selectedEl) {
+        selectedEl.classList.add("selected");
+      }
+
+      console.log("[PersonaService] Selected persona:", personaId);
+    } catch (error) {
+      console.error("[PersonaService] Error selecting persona:", error);
+    }
+  },
+
+  /**
+   * Deselect current persona
+   */
+  deselectPersona() {
+    sessionStorage.removeItem("selectedPersonaId");
+    sessionStorage.removeItem("selectedPersona");
+
+    document.querySelectorAll(".persona").forEach(el => {
+      el.classList.remove("selected");
+    });
+
+    console.log("[PersonaService] Deselected persona");
+  },
+
+  /**
+   * Load selected persona from session and highlight it
+   */
+  async loadSelectedPersona(storageManager) {
+    const selectedPersonaId = sessionStorage.getItem("selectedPersonaId");
+    if (selectedPersonaId) {
+      try {
+        const persona = await storageManager.loadPersona(selectedPersonaId);
+        sessionStorage.setItem("selectedPersona", JSON.stringify(persona));
+
+        const selectedEl = document.querySelector(`[data-persona-id="${selectedPersonaId}"]`);
+        if (selectedEl) {
+          selectedEl.classList.add("selected");
+        }
+      } catch (error) {
+        console.error("[PersonaService] Error loading selected persona:", error);
+        sessionStorage.removeItem("selectedPersonaId");
+        sessionStorage.removeItem("selectedPersona");
+      }
     }
   },
 

@@ -2,6 +2,8 @@
  * Message Service - Handles message sending, editing, and regeneration
  */
 
+import { ToastService } from './toastService.js';
+
 const MessageService = {
   /**
    * Send a message and get response
@@ -21,11 +23,12 @@ const MessageService = {
     // Check if currently generating - if so, stop generation
     if (window.isGenerating) {
       inferenceManager.stopGeneration();
-      return;
-    }
-
-    if (!window.currentChatId || !window.currentBotData) {
-      alert("Please select a bot to chat with first!");
+      window.isGenerating = false;
+      input.disabled = false;
+      sendBtn.innerHTML = "send";
+      sendBtn.style.opacity = "";
+      sendBtn.style.cursor = "pointer";
+      input.focus();
       return;
     }
 
@@ -35,10 +38,16 @@ const MessageService = {
       return;
     }
 
+    // Handle case when no bot is selected - use default assistant
+    if (!window.currentChatId || !window.currentBotData) {
+      await this.startDefaultAssistant(storageManager, inferenceManager, message);
+      return;
+    }
+
     window.isGenerating = true;
     input.value = "";
     input.disabled = true;
-    
+
     // Change button to stop button
     sendBtn.innerHTML = "stop";
     sendBtn.style.opacity = "";
@@ -49,6 +58,9 @@ const MessageService = {
     const avatar = character.avatar || window.currentBotData.bot;
     const botName = character.name || "Bot";
 
+    // Get selected persona
+    const selectedPersona = window.personaService.getSelectedPersona();
+
     // Get current messages to calculate storage index
     const chat = await storageManager.getChat(window.currentChatId);
     let messages = chat.messages || [];
@@ -56,8 +68,10 @@ const MessageService = {
     // Calculate storage indices (actual array positions)
     const userMessageIndex = messages.length;
 
-    // Display user message with storage index
-    window.chatService.appendMessage("user", message, "https://cataas.com/cat", "You", null, userMessageIndex, null, null);
+    // Display user message with persona name and avatar if available
+    const userName = selectedPersona ? selectedPersona.name : "You";
+    const userAvatar = (selectedPersona && selectedPersona.avatar) ? selectedPersona.avatar : "https://cataas.com/cat";
+    window.chatService.appendMessage("user", message, userAvatar, userName, null, userMessageIndex, null, null);
 
     // Add user message
     messages.push({
@@ -69,9 +83,13 @@ const MessageService = {
     const assistantMessageIndex = messages.length;
 
     // Get config from UI
+    const topKVal = parseInt(document.getElementById("topK")?.value) || 0;
+    const minPVal = parseFloat(document.getElementById("minP")?.value) || 0;
     const config = {
       temperature: parseFloat(document.getElementById("temperature").value) || 0.6,
       top_p: parseFloat(document.getElementById("topP").value) || null,
+      top_k: topKVal > 0 ? topKVal : null,
+      min_p: minPVal > 0 ? minPVal : null,
       max_tokens: parseInt(document.getElementById("maxTokens").value) || null,
       presence_penalty: parseFloat(document.getElementById("presencePenalty").value) || null,
       frequency_penalty: parseFloat(document.getElementById("frequencyPenalty").value) || null,
@@ -88,56 +106,37 @@ const MessageService = {
       }
     }
 
-    // Get custom prompt
-    const customPrompt = document.getElementById("prompt").value;
-    const promptLocation = document.getElementById("promptLocation").value;
-
-    if (customPrompt) {
-      // Apply template variable replacement to custom prompt
-      const processedPrompt = ChatService.replaceTemplateVars(customPrompt, character);
-
-      if (promptLocation === "before") {
-        // Find system message and prepend
-        const sysMsg = messages.find((m) => m.role === "system");
-        if (sysMsg) {
-          sysMsg.content = processedPrompt + "\n\n" + sysMsg.content;
-        } else {
-          messages.unshift({
-            role: "system",
-            content: processedPrompt,
-          });
-        }
-      } else {
-        // Append after system
-        const sysMsg = messages.find((m) => m.role === "system");
-        if (sysMsg) {
-          sysMsg.content = sysMsg.content + "\n\n" + processedPrompt;
-        } else {
-          messages.push({
-            role: "system",
-            content: processedPrompt,
-          });
-        }
-      }
-    }
-
     // Get context length from UI
     const contextLength = parseInt(document.getElementById("contextLength").value) || 0;
+
+    // Get arrangement from UI
+    const arrangement = parseInt(document.getElementById("arrangement")?.value) || 0;
+
+    // Get custom prompt and location from UI
+    const customPrompt = document.getElementById("prompt")?.value || "";
+    const promptLocation = document.getElementById("promptLocation")?.value || "before";
 
     // Preprocess messages
     const processedMessages = inferenceManager.preprocessChat(
       messages,
-      0, // arrangement
+      arrangement,
       preset,
-      contextLength // context length (0 = no limit)
+      contextLength,
+      customPrompt,
+      promptLocation,
     );
 
-    // Create placeholder for streaming response
+    // Create placeholder for streaming response with animated loading indicator
     const aiMessageDiv = window.chatService.appendMessage("assistant", "...", avatar, botName, null, assistantMessageIndex, null, null);
+    const aiMessageTextSpan = aiMessageDiv.querySelector('.message-text');
+    if (aiMessageTextSpan) {
+      aiMessageTextSpan.innerHTML = window.chatRenderer.createLoadingIndicator();
+    }
 
     const chatContainer = document.querySelector(".chat-container");
 
     let responseText = "";
+    let wasAborted = false;
 
     try {
       // Check if streaming is enabled
@@ -173,8 +172,18 @@ const MessageService = {
           }
         );
 
+        // Check if generation was aborted
+        if (!inferenceManager.abortController || inferenceManager.abortController.signal.aborted) {
+          wasAborted = true;
+        }
+
         // Finalize the streaming message with full markdown rendering
-        window.chatRenderer.finalizeStreamingMessage(aiMessageDiv, responseText);
+        if (!wasAborted || responseText.trim()) {
+          window.chatRenderer.finalizeStreamingMessage(aiMessageDiv, responseText);
+        } else {
+          // Remove the placeholder message if nothing was generated
+          aiMessageDiv.remove();
+        }
       } else {
         const response = await inferenceManager.generateResponse(
           processedMessages,
@@ -186,30 +195,41 @@ const MessageService = {
         window.chatRenderer.finalizeStreamingMessage(aiMessageDiv, responseText);
       }
 
-      // Add assistant response to messages
-      messages.push({
-        role: "assistant",
-        content: responseText,
-      });
+      // Only save if we have content and weren't aborted
+      if (!wasAborted && responseText.trim()) {
+        // Add assistant response to messages
+        messages.push({
+          role: "assistant",
+          content: responseText,
+        });
 
-      // Save chat with bot ID
-      await storageManager.saveChat(window.currentChatId, {
-        bot: window.currentBotData,
-        botId: window.currentBotId,
-        timestamp: new Date().getTime(),
-        messages: messages,
-      });
+        // Save chat with bot ID
+        await storageManager.saveChat(window.currentChatId, {
+          bot: window.currentBotData,
+          botId: window.currentBotId,
+          timestamp: new Date().getTime(),
+          messages: messages,
+        });
 
-      // Update chat timestamp in UI
-      window.botService.updateChatTimestamp(window.currentChatId);
+        // Update chat timestamp in UI
+        window.botService.updateChatTimestamp(window.currentChatId);
+      }
     } catch (error) {
       console.error("Error generating response:", error);
-      window.chatRenderer.updateStreamingMessage(
-        aiMessageDiv,
-        `[Error: ${error.message}]`
-      );
+      if (error.name === 'AbortError' || error.message.includes('aborted')) {
+        wasAborted = true;
+        // Remove the placeholder message if nothing was generated
+        if (!responseText.trim()) {
+          aiMessageDiv.remove();
+        }
+      } else {
+        // Show error as toast instead of message
+        ToastService.error(`API Error: ${error.message}`);
+        aiMessageDiv.remove();
+      }
     } finally {
       window.isGenerating = false;
+      inferenceManager.abortController = null;
       input.disabled = false;
       sendBtn.innerHTML = "send";
       sendBtn.style.opacity = "";
@@ -336,13 +356,35 @@ const MessageService = {
 
     window.isGenerating = true;
 
-    // Get the messages up to and including the user message before this assistant message
-    const messagesToUse = chat.messages.slice(0, messageIndex);
+    // Special handling for first assistant message (index 0 after the system-added user message)
+    // For the first message, we need to include the system prompt and use a special regeneration prompt
+    let messagesToUse;
+    const isFirstAssistantMessage = messageIndex === 0 || 
+      (chat.messages.slice(0, messageIndex).filter(m => m.role === 'assistant').length === 0);
+
+    if (isFirstAssistantMessage) {
+      // For first message regeneration, include system prompt and use a prompt to regenerate the intro
+      messagesToUse = chat.messages.slice(0, messageIndex + 1);
+      // Add a user message to prompt regeneration if there's no user message yet
+      if (!messagesToUse.some(m => m.role === 'user')) {
+        messagesToUse.push({
+          role: 'user',
+          content: '[System: Please regenerate your introduction based on the character definition.]'
+        });
+      }
+    } else {
+      // For subsequent messages, get messages up to and including the user message before this assistant message
+      messagesToUse = chat.messages.slice(0, messageIndex);
+    }
 
     // Get config from UI
+    const rerollTopK = parseInt(document.getElementById("topK")?.value) || 0;
+    const rerollMinP = parseFloat(document.getElementById("minP")?.value) || 0;
     const config = {
       temperature: parseFloat(document.getElementById("temperature").value) || 0.6,
       top_p: parseFloat(document.getElementById("topP").value) || null,
+      top_k: rerollTopK > 0 ? rerollTopK : null,
+      min_p: rerollMinP > 0 ? rerollMinP : null,
       max_tokens: parseInt(document.getElementById("maxTokens").value) || null,
       presence_penalty: parseFloat(document.getElementById("presencePenalty").value) || null,
       frequency_penalty: parseFloat(document.getElementById("frequencyPenalty").value) || null,
@@ -359,47 +401,34 @@ const MessageService = {
       }
     }
 
-    // Get custom prompt
-    const customPrompt = document.getElementById("prompt").value;
-    const promptLocation = document.getElementById("promptLocation").value;
-    const character = window.currentBotData.character;
-
-    if (customPrompt) {
-      const processedPrompt = ChatService.replaceTemplateVars(customPrompt, character);
-      const sysMsg = messagesToUse.find((m) => m.role === "system");
-      if (sysMsg) {
-        if (promptLocation === "before") {
-          sysMsg.content = processedPrompt + "\n\n" + sysMsg.content;
-        } else {
-          sysMsg.content = sysMsg.content + "\n\n" + processedPrompt;
-        }
-      } else {
-        messagesToUse.unshift({
-          role: "system",
-          content: processedPrompt,
-        });
-      }
-    }
-
     // Get context length
     const contextLength = parseInt(document.getElementById("contextLength").value) || 0;
+
+    // Get arrangement from UI
+    const rerollArrangement = parseInt(document.getElementById("arrangement")?.value) || 0;
+
+    // Get custom prompt and location from UI
+    const customPrompt = document.getElementById("prompt")?.value || "";
+    const promptLocation = document.getElementById("promptLocation")?.value || "before";
 
     // Preprocess messages
     const processedMessages = inferenceManager.preprocessChat(
       messagesToUse,
-      0,
+      rerollArrangement,
       preset,
-      contextLength
+      contextLength,
+      customPrompt,
+      promptLocation,
     );
 
     // Get the message element
     const messageElement = document.querySelector(`.message[data-message-index="${messageIndex}"]`);
     const chatContainer = document.querySelector(".chat-container");
 
-    // Create placeholder for streaming response
+    // Create placeholder for streaming response with animated loading indicator
     const textSpan = messageElement?.querySelector('.message-text');
     if (textSpan) {
-      textSpan.textContent = '...';
+      textSpan.innerHTML = window.chatRenderer.createLoadingIndicator();
     }
 
     let responseText = "";
@@ -492,8 +521,16 @@ const MessageService = {
       window.botService.updateChatTimestamp(window.currentChatId);
     } catch (error) {
       console.error("Error re-rolling message:", error);
-      if (textSpan) {
-        textSpan.textContent = `[Error: ${error.message}]`;
+      // Show error as toast instead of message
+      ToastService.error(`Re-roll Error: ${error.message}`);
+      // Restore original content if available
+      const messageElement = document.querySelector(`.message[data-message-index="${messageIndex}"]`);
+      if (messageElement) {
+        const textSpan = messageElement?.querySelector('.message-text');
+        const chat = await storageManager.getChat(window.currentChatId);
+        if (chat && chat.messages && chat.messages[messageIndex]) {
+          textSpan.textContent = chat.messages[messageIndex].content;
+        }
       }
     } finally {
       window.isGenerating = false;
@@ -615,6 +652,128 @@ const MessageService = {
     // This is a placeholder for future implementation
     // Could automatically regenerate all assistant messages after the edited one
     console.log('[regenerateSubsequentMessages] Not yet implemented');
+  },
+
+  /**
+   * Start a default assistant when no bot is selected
+   * @param {StorageManager} storageManager - Storage manager instance
+   * @param {InferenceManager} inferenceManager - Inference manager instance
+   * @param {string} userMessage - The user's message
+   */
+  async startDefaultAssistant(storageManager, inferenceManager, userMessage) {
+    // Create a default bot/character
+    const defaultBotData = {
+      id: 'default-assistant',
+      bot: 'https://cataas.com/cat',
+      character: {
+        name: 'Kiwi Assistant',
+        description: 'A helpful AI assistant.',
+        personality: 'Helpful, friendly, and informative.',
+        first_mes: 'Hello! I\'m your Kiwi Assistant. How can I help you today?',
+        mes_example: '',
+        scenario: '',
+        system_prompt: 'You are a helpful, harmless, and honest AI assistant. You provide useful information and engage in friendly conversation.'
+      }
+    };
+
+    // Check for existing default assistant chats
+    const existingChats = await ChatService.getChatsForBot(storageManager, 'default-assistant');
+
+    if (existingChats.length > 0) {
+      // Load the most recent chat
+      const mostRecentChat = existingChats[0];
+      await window.loadChat(
+        mostRecentChat.id,
+        mostRecentChat.bot || defaultBotData,
+        mostRecentChat.botId || 'default-assistant'
+      );
+      // Now send the message
+      window.currentChatId = mostRecentChat.id;
+      window.currentBotData = mostRecentChat.bot || defaultBotData;
+      window.currentBotId = 'default-assistant';
+      // Re-call sendMessage with the chat now loaded
+      await this.sendMessage(storageManager, inferenceManager);
+      return;
+    }
+
+    // Create a new default chat
+    window.currentBotId = 'default-assistant';
+    window.currentBotData = defaultBotData;
+
+    // Get selected persona
+    const selectedPersona = window.personaService.getSelectedPersona();
+    window.currentPersonaId = selectedPersona ? selectedPersona.id : null;
+
+    // Create new chat
+    window.currentChatId = await storageManager.createChat(defaultBotData);
+
+    // Clear chat container
+    const chatContainer = document.querySelector(".chat-container");
+    chatContainer.innerHTML = "";
+
+    // Get character data
+    const character = defaultBotData.character;
+    const firstMes = ChatService.replaceTemplateVars(
+      character.first_mes || "Hello!",
+      character,
+      selectedPersona
+    );
+    const avatar = character.avatar || defaultBotData.bot;
+
+    // Store first message as user message with "." to avoid templating issues
+    const messages = [
+      {
+        role: "user",
+        content: ".",
+      },
+    ];
+
+    // Build system prompt with persona
+    const systemPrompt = ChatService.buildSystemPrompt(character, selectedPersona);
+    if (systemPrompt) {
+      messages.unshift({
+        role: "system",
+        content: systemPrompt,
+      });
+    }
+
+    // Save initial chat state with bot ID and persona ID
+    await storageManager.saveChat(window.currentChatId, {
+      bot: defaultBotData,
+      botId: 'default-assistant',
+      personaId: window.currentPersonaId,
+      timestamp: new Date().getTime(),
+      messages: messages,
+    });
+
+    // Display first message from assistant
+    ChatService.appendMessage("assistant", firstMes, avatar, character.name || "Kiwi Assistant");
+
+    // Add assistant's first message to chat history
+    messages.push({
+      role: "assistant",
+      content: firstMes,
+    });
+
+    // Update chat storage with bot ID and persona ID
+    await storageManager.saveChat(window.currentChatId, {
+      bot: defaultBotData,
+      botId: window.currentBotId,
+      personaId: window.currentPersonaId,
+      timestamp: new Date().getTime(),
+      messages: messages,
+    });
+
+    // Update UI to show chat name
+    document.querySelector(".chat-name").textContent = character.name || "Kiwi Assistant";
+
+    // Close left sidebar on mobile
+    if (window.innerWidth < 768) {
+      window.toggleLeftSidebar();
+    }
+
+    // Now send the user's message
+    await this.sendMessage(storageManager, inferenceManager);
   }
 };
 

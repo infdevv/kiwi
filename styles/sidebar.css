@@ -147,6 +147,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: calc(100% - 90px);
+  margin-right: 32px;
 }
 
 /* Chat Items */
@@ -160,6 +162,11 @@
 
 .chat-item .bot-name {
   margin-left: 58px;
+  max-width: calc(100% - 90px);
+  margin-right: 32px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-item .delete-btn {
@@ -254,6 +261,39 @@
   justify-content: flex-end;
 }
 
+.dialog-large {
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.dialog-large .form {
+  max-height: none;
+}
+
+/* Options button for bots */
+.bot .options-btn {
+  position: absolute;
+  right: 12px;
+  font-size: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.bot .options-btn:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
 /* Persona Dialog Styles */
 #personaAvatarPreview {
   text-align: center;
@@ -298,6 +338,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: calc(100% - 90px);
+  margin-right: 32px;
 }
 
 .persona .persona-description {
@@ -330,4 +372,21 @@
 .persona .delete-btn:hover {
   background-color: var(--bg-elevated);
   color: #ef4444;
+}
+
+/* Selected Persona State */
+.persona.selected {
+  border-color: var(--accent-primary);
+  background-color: rgba(60, 214, 124, 0.1);
+}
+
+.persona.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--accent-primary);
+  border-radius: 8px 0 0 8px;
 }

@@ -7,7 +7,17 @@ const SettingsService = {
    * Save API configuration
    */
   saveApiConfig(inferenceManagerInstance) {
-    const endpoint = document.getElementById("apiEndpoint").value;
+    let endpoint = document.getElementById("apiEndpoint").value;
+    //quickly process the endpoint to resolve it
+    if (
+      !endpoint.endsWith("chat/completions") &&
+      endpoint.replaceAll("/", "").endswith("v1")
+    ) {
+      if (endpoint.endsWith("/")) endpoint += "chat/completions";
+      else {
+        endpoint += "/chat/completions";
+      }
+    }
     const apiKey = document.getElementById("apiKey").value;
     const model = document.getElementById("apiModel").value;
     const streaming = document.getElementById("streamingToggle").checked;
@@ -52,13 +62,16 @@ const SettingsService = {
       maxTokens: document.getElementById("maxTokens").value,
       temperature: document.getElementById("temperature").value,
       topP: document.getElementById("topP").value,
+      topK: document.getElementById("topK")?.value ?? "0",
+      minP: document.getElementById("minP")?.value ?? "0",
       frequencyPenalty: document.getElementById("frequencyPenalty").value,
       presencePenalty: document.getElementById("presencePenalty").value,
+      arrangement: document.getElementById("arrangement")?.value ?? "0",
     };
 
     localStorage.setItem(
       "kiwi_generation_settings",
-      JSON.stringify(generationSettings)
+      JSON.stringify(generationSettings),
     );
   },
 
@@ -70,7 +83,17 @@ const SettingsService = {
     const prompt = document.getElementById("prompt").value;
     const promptLocation = document.getElementById("promptLocation").value;
     const currentPreset = localStorage.getItem("currentPreset");
-    const presetName = document.getElementById("presetName").textContent;
+    
+    // ALWAYS read preset name from localStorage, not from DOM
+    // The DOM might still say "No Preset" when loading
+    let presetName = localStorage.getItem("currentPresetName");
+    if (!presetName) {
+      // Fallback to DOM only if nothing in localStorage
+      presetName = document.getElementById("presetName").textContent;
+      if (presetName === "No Preset") {
+        presetName = null;
+      }
+    }
 
     const llmSettings = {
       streaming: streaming,
@@ -78,9 +101,27 @@ const SettingsService = {
       promptLocation: promptLocation,
       preset: currentPreset,
       presetName: presetName,
+      // Save the actual preset prompts from the UI
+      presetPrompts: {},
     };
 
+    // Save preset prompt toggles and values if they exist
+    const presetTogglesContainer = document.getElementById("presetToggles");
+    if (presetTogglesContainer) {
+      const toggleInputs = presetTogglesContainer.querySelectorAll("input[type='checkbox']");
+      toggleInputs.forEach(input => {
+        if (input.id && input.dataset.promptIndex !== undefined) {
+          llmSettings.presetPrompts[input.id] = input.checked;
+        }
+      });
+    }
+
     localStorage.setItem("kiwi_llm_settings", JSON.stringify(llmSettings));
+    
+    // Also save preset name separately for easy access
+    if (presetName) {
+      localStorage.setItem("currentPresetName", presetName);
+    }
   },
 
   /**
@@ -126,12 +167,18 @@ const SettingsService = {
       if (settings.temperature)
         document.getElementById("temperature").value = settings.temperature;
       if (settings.topP) document.getElementById("topP").value = settings.topP;
+      if (settings.topK && document.getElementById("topK"))
+        document.getElementById("topK").value = settings.topK;
+      if (settings.minP && document.getElementById("minP"))
+        document.getElementById("minP").value = settings.minP;
       if (settings.frequencyPenalty)
         document.getElementById("frequencyPenalty").value =
           settings.frequencyPenalty;
       if (settings.presencePenalty)
         document.getElementById("presencePenalty").value =
           settings.presencePenalty;
+      if (settings.arrangement && document.getElementById("arrangement"))
+        document.getElementById("arrangement").value = settings.arrangement;
     }
   },
 
@@ -139,9 +186,21 @@ const SettingsService = {
    * Load LLM settings from localStorage
    */
   loadLlmSettings() {
+    console.log('[SettingsService] Loading LLM settings...');
     const savedSettings = localStorage.getItem("kiwi_llm_settings");
+    
+    // ALWAYS check localStorage for preset name first
+    const savedPresetName = localStorage.getItem("currentPresetName");
+    const presetNameEl = document.getElementById("presetName");
+    
+    if (savedPresetName && presetNameEl) {
+      presetNameEl.textContent = savedPresetName;
+      console.log('[SettingsService] Restored preset name from localStorage:', savedPresetName);
+    }
+    
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
+      console.log('[SettingsService] Found saved LLM settings, presetName:', settings.presetName);
       if (settings.streaming !== undefined) {
         document.getElementById("presetStreamingToggle").checked =
           settings.streaming;
@@ -149,13 +208,32 @@ const SettingsService = {
       if (settings.prompt)
         document.getElementById("prompt").value = settings.prompt;
       if (settings.promptLocation)
-        document.getElementById("promptLocation").value = settings.promptLocation;
+        document.getElementById("promptLocation").value =
+          settings.promptLocation;
       if (settings.preset) {
         localStorage.setItem("currentPreset", settings.preset);
       }
-      if (settings.presetName) {
-        document.getElementById("presetName").textContent = settings.presetName;
+      // Don't overwrite presetName from settings if we already have one in localStorage
+      if (settings.presetName && !savedPresetName) {
+        if (presetNameEl) {
+          presetNameEl.textContent = settings.presetName;
+          console.log('[SettingsService] Restored preset name from LLM settings:', settings.presetName);
+        }
+        localStorage.setItem("currentPresetName", settings.presetName);
       }
+      // Restore preset prompt toggles and values
+      if (settings.presetPrompts) {
+        Object.keys(settings.presetPrompts).forEach(key => {
+          const input = document.getElementById(key);
+          if (input && input.dataset.promptIndex !== undefined) {
+            input.checked = settings.presetPrompts[key];
+            // Trigger change event to update content visibility
+            input.dispatchEvent(new Event('change'));
+          }
+        });
+      }
+    } else {
+      console.log('[SettingsService] No saved LLM settings found');
     }
   },
 
@@ -168,8 +246,11 @@ const SettingsService = {
       "maxTokens",
       "temperature",
       "topP",
+      "topK",
+      "minP",
       "frequencyPenalty",
       "presencePenalty",
+      "arrangement",
     ];
     generationInputs.forEach((id) => {
       const input = document.getElementById(id);
@@ -183,7 +264,7 @@ const SettingsService = {
     const promptInput = document.getElementById("prompt");
     const promptLocationSelect = document.getElementById("promptLocation");
     const presetStreamingToggle = document.getElementById(
-      "presetStreamingToggle"
+      "presetStreamingToggle",
     );
     const streamingToggle = document.getElementById("streamingToggle");
 
@@ -193,7 +274,7 @@ const SettingsService = {
     }
     if (promptLocationSelect) {
       promptLocationSelect.addEventListener("change", () =>
-        this.saveLlmSettings()
+        this.saveLlmSettings(),
       );
     }
     if (presetStreamingToggle) {
@@ -223,27 +304,30 @@ const SettingsService = {
     const backgroundInput = document.getElementById("background");
     if (!backgroundInput) return;
 
-    backgroundInput.addEventListener("change", function (e) {
-      const file = e.target.files[0];
-      if (!file) return;
+    backgroundInput.addEventListener(
+      "change",
+      function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        const bgData = event.target.result;
-        try {
-          localStorage.setItem("kiwi_background", bgData);
-          this.applyBackground();
-          alert("Background saved!");
-        } catch (error) {
-          if (error.name === "QuotaExceededError") {
-            alert("Image too large for storage. Please use a smaller image.");
-          } else {
-            alert("Error saving background: " + error.message);
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const bgData = event.target.result;
+          try {
+            localStorage.setItem("kiwi_background", bgData);
+            this.applyBackground();
+            alert("Background saved!");
+          } catch (error) {
+            if (error.name === "QuotaExceededError") {
+              alert("Image too large for storage. Please use a smaller image.");
+            } else {
+              alert("Error saving background: " + error.message);
+            }
           }
-        }
-      }.bind(this);
-      reader.readAsDataURL(file);
-    }.bind(this));
+        }.bind(this);
+        reader.readAsDataURL(file);
+      }.bind(this),
+    );
   },
 
   /**
@@ -273,7 +357,7 @@ const SettingsService = {
   clearBackground() {
     localStorage.removeItem("kiwi_background");
     document.body.style.backgroundImage = "none";
-  }
+  },
 };
 
 export { SettingsService };

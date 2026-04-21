@@ -30,11 +30,11 @@ const BotService = {
     botDiv.innerHTML = `
       <img src="${avatar}" alt="${botName}">
       <p class="bot-name">${botName}</p>
-      <span class="material-symbols-outlined delete-btn" onclick="window.deleteBotFromUI(this, '${botId}')">delete</span>
+      <span class="material-symbols-outlined options-btn" onclick="window.openBotOptions('${botId}')">more_vert</span>
     `;
 
     botDiv.addEventListener("click", (e) => {
-      if (!e.target.classList.contains("delete-btn")) {
+      if (!e.target.classList.contains("options-btn")) {
         if (window.startChat) {
           window.startChat(botId, botData);
         }
@@ -184,11 +184,11 @@ const BotService = {
       botEntry.innerHTML = `
         <img src="${avatar}" alt="${botName}">
         <p class="bot-name">${botName}</p>
-        <span class="material-symbols-outlined delete-btn" onclick="window.deleteBotFromUI(this, '${botId}')">delete</span>
+        <span class="material-symbols-outlined options-btn" onclick="window.openBotOptions('${botId}')">more_vert</span>
       `;
 
       botEntry.addEventListener("click", (e) => {
-        if (!e.target.classList.contains("delete-btn")) {
+        if (!e.target.classList.contains("options-btn")) {
           if (window.startChat) {
             window.startChat(botId, botData);
           }

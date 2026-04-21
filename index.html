@@ -8,7 +8,7 @@
 
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <link rel="stylesheet" href="styles/index.css?t=8">
+    <link rel="stylesheet" href="styles/index.css?t=9">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
     <script type="module">
         import { marked } from 'https://cdn.jsdelivr.net/npm/marked@12.0.0/+esm';
@@ -18,6 +18,9 @@
 
 <body>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <div class="dialog-overlay" id="uploadDialog">
         <div class="dialog">
@@ -34,11 +37,20 @@
                         style="vertical-align: middle; margin-right: 8px;">upload</span>
                     Upload Image
                 </button>
+                <button class="btn" onclick="openCreateBotDialog()" style="width: 100%; height: 48px;">
+                    <span class="material-symbols-outlined"
+                        style="vertical-align: middle; margin-right: 8px;">edit_note</span>
+                    Create Manually
+                </button>
             </div>
             <div id="imageUploadSection" style="display: none;">
                 <p style="margin-bottom: 8px; color: #888; font-size: 0.85rem;">Upload a character card image (PNG with
                     character metadata)</p>
-                <input type="file" id="botImageInput" accept="image/*">
+                <input type="file" id="botImageInput" accept="image/*" style="display: none;">
+                <button class="btn" onclick="document.getElementById('botImageInput').click()" style="width: 100%; margin-top: 8px;">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px;">image</span>
+                    Choose Image
+                </button>
             </div>
             <div class="dialog-buttons">
                 <button class="btn" id="cancelUploadBtn">Cancel</button>
@@ -66,7 +78,11 @@
             </div>
             <div id="presetUploadSection" style="display: none;">
                 <p style="margin-bottom: 8px; color: #888; font-size: 0.85rem;">Upload a preset JSON file</p>
-                <input type="file" id="presetFileInput" accept=".json">
+                <input type="file" id="presetFileInput" accept=".json" style="display: none;">
+                <button class="btn" onclick="document.getElementById('presetFileInput').click()" style="width: 100%; margin-top: 8px;">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px;">description</span>
+                    Choose JSON File
+                </button>
             </div>
             <div class="dialog-buttons">
                 <button class="btn" id="cancelPresetBtn">Cancel</button>
@@ -111,12 +127,16 @@
             <div class="form">
                 <label for="personaNameInput">Name</label>
                 <input type="text" id="personaNameInput" placeholder="e.g., Curious Student, Detective, etc.">
-                
+
                 <label for="personaDescriptionInput">Description</label>
                 <textarea id="personaDescriptionInput" placeholder="Brief description of your persona..." style="min-height: 80px;"></textarea>
-                
+
                 <label for="personaAvatarInput">Avatar (optional)</label>
-                <input type="file" id="personaAvatarInput" accept="image/*">
+                <input type="file" id="personaAvatarInput" accept="image/*" style="display: none;">
+                <button class="btn" onclick="document.getElementById('personaAvatarInput').click()" style="width: 100%; margin-top: 8px; margin-bottom: 8px;">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px;">image</span>
+                    Choose Avatar
+                </button>
                 <div id="personaAvatarPreview" style="display: none; margin-top: 8px;">
                     <img id="personaAvatarPreviewImg" src="" alt="Avatar Preview" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-default);">
                 </div>
@@ -128,9 +148,80 @@
         </div>
     </div>
 
+    <div class="dialog-overlay" id="botOptionsDialog">
+        <div class="dialog">
+            <h3>Bot Options</h3>
+            <p style="margin-bottom: 16px; color: #888; font-size: 0.9rem;">Choose an action:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <button class="btn" onclick="BotEditorService.editBot()" style="width: 100%; height: 48px;">
+                    <span class="material-symbols-outlined"
+                        style="vertical-align: middle; margin-right: 8px;">edit</span>
+                    Edit Bot
+                </button>
+                <button class="btn" onclick="BotEditorService.deleteBot()" style="width: 100%; height: 48px; border-color: #ef4444;">
+                    <span class="material-symbols-outlined"
+                        style="vertical-align: middle; margin-right: 8px;">delete</span>
+                    Delete Bot
+                </button>
+            </div>
+            <div class="dialog-buttons">
+                <button class="btn" id="cancelBotOptionsBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="botEditorDialog">
+        <div class="dialog dialog-large">
+            <h3 id="botEditorTitle">Create Bot</h3>
+            <div class="form">
+                <label for="botEditorName">Name</label>
+                <input type="text" id="botEditorName" placeholder="Character name">
+
+                <label for="botEditorAvatar">Avatar URL (or upload image below)</label>
+                <input type="text" id="botEditorAvatarUrl" placeholder="https://example.com/image.png">
+                <input type="file" id="botEditorAvatarFile" accept="image/*" style="display: none; margin-top: 8px;">
+                <button class="btn" onclick="document.getElementById('botEditorAvatarFile').click()" style="width: 100%; margin-top: 8px;">
+                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px;">image</span>
+                    Upload Avatar Image
+                </button>
+                <div id="botEditorAvatarPreview" style="display: none; margin-top: 8px; text-align: center;">
+                    <img id="botEditorAvatarPreviewImg" src="" alt="Avatar Preview" style="width: 150px; height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-default);">
+                </div>
+
+                <label for="botEditorDescription">Description</label>
+                <textarea id="botEditorDescription" placeholder="Character description..." style="min-height: 100px;"></textarea>
+
+                <label for="botEditorPersonality">Personality</label>
+                <textarea id="botEditorPersonality" placeholder="Character personality traits..." style="min-height: 80px;"></textarea>
+
+                <label for="botEditorScenario">Scenario</label>
+                <textarea id="botEditorScenario" placeholder="Current scenario or context..." style="min-height: 80px;"></textarea>
+
+                <label for="botEditorFirstMes">First Message</label>
+                <textarea id="botEditorFirstMes" placeholder="Character's first message..." style="min-height: 80px;"></textarea>
+
+                <label for="botEditorMesExample">Example Messages</label>
+                <textarea id="botEditorMesExample" placeholder="Example dialogue (use &lt;START&gt; for new examples)..." style="min-height: 100px;"></textarea>
+
+                <label for="botEditorSystemPrompt">System Prompt (optional)</label>
+                <textarea id="botEditorSystemPrompt" placeholder="Additional system instructions..." style="min-height: 80px;"></textarea>
+
+                <label for="botEditorCreator">Creator (optional)</label>
+                <input type="text" id="botEditorCreator" placeholder="Creator name">
+
+                <label for="botEditorTags">Tags (comma-separated, optional)</label>
+                <input type="text" id="botEditorTags" placeholder="fantasy, romance, adventure">
+            </div>
+            <div class="dialog-buttons" style="margin-top: 16px;">
+                <button class="btn" id="cancelBotEditorBtn">Cancel</button>
+                <button class="btn" id="confirmBotEditorBtn" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); border: none;">Save Bot</button>
+            </div>
+        </div>
+    </div>
+
     <aside class="sidebar sidebar-left" id="leftSidebar">
         <div style="display: flex;">
-            <h3 style="margin-top: 7px;" class="logo">KiwiAI</h3>
+            <h3 style="margin-top: 6px;" class="logo">KiwiAI</h3>
             <div class="sidebar-close material-symbols-outlined" onclick="toggleLeftSidebar()"
                 style="margin-left: auto;">
                 close
@@ -151,6 +242,10 @@
             <div class="bot" id="addBotBtn">
                 <span class="material-symbols-outlined add">add</span>
                 <p class="bot-name">Add Bot</p>
+            </div>
+            <div class="bot" id="createBotBtn" style="display: none;">
+                <span class="material-symbols-outlined add">edit_note</span>
+                <p class="bot-name">Create Bot Manually</p>
             </div>
         </div>
         <div class="sidebar-content" id="chats-tab-content" style="display: none;">
@@ -198,12 +293,12 @@
 
                     <label for="apiModel">Model</label>
                     <input type="text" id="apiModel" placeholder="gpt-5.4, opus-4.6, etc">
-                    <div style="display: flex;">
+                    <div class="toggle-container">
                         <label class="switch">
                             <input type="checkbox" id="streamingToggle">
                             <span class="slider"></span>
                         </label>
-                        <p style="margin-top: 15px; margin-left: 10px;">Text-Streaming</p>
+                        <p>Text-Streaming</p>
                     </div>
                     <button class="btn save-api-btn" id="saveApiBtn">Save Configuration</button>
                 </div>
@@ -211,18 +306,29 @@
             <div class="sidebar-tab-content" id="generation-tab">
                 <h3 class="sidebar-header">Generation Settings</h3>
                 <div class="form">
-                    <label for="contextLength">Context Length (Default: 0 = unlimited)</label>
-                    <input type="number" id="contextLength" placeholder="Context Length" value="0">
+                    <label for="contextLength">Context Length (0 = unlimited)</label>
+                    <input type="number" id="contextLength" placeholder="Context Length" value="0" min="0">
                     <label for="maxTokens">Max Tokens (Default: 4000)</label>
-                    <input type="number" id="maxTokens" placeholder="Max Tokens" value="4000">
+                    <input type="number" id="maxTokens" placeholder="Max Tokens" value="4000" min="1">
                     <label for="temperature">Temperature (Default: 0.6)</label>
-                    <input type="number" id="temperature" placeholder="Temperature" value="0.6">
-                    <label for="topP">Top P (Default: 0)</label>
-                    <input type="number" id="topP" placeholder="Top P" value="0">
+                    <input type="number" id="temperature" placeholder="Temperature" value="0.6" step="0.01" min="0" max="2">
+                    <label for="topP">Top P (0 = disabled)</label>
+                    <input type="number" id="topP" placeholder="Top P" value="0" step="0.01" min="0" max="1">
+                    <label for="topK">Top K (0 = disabled)</label>
+                    <input type="number" id="topK" placeholder="Top K" value="0" min="0">
+                    <label for="minP">Min P (0 = disabled)</label>
+                    <input type="number" id="minP" placeholder="Min P" value="0" step="0.01" min="0" max="1">
                     <label for="frequencyPenalty">Frequency Penalty (Default: 0)</label>
-                    <input type="number" id="frequencyPenalty" placeholder="Frequency Penalty" value="0">
+                    <input type="number" id="frequencyPenalty" placeholder="Frequency Penalty" value="0" step="0.01" min="-2" max="2">
                     <label for="presencePenalty">Presence Penalty (Default: 0)</label>
-                    <input type="number" id="presencePenalty" placeholder="Presence Penalty" value="0">
+                    <input type="number" id="presencePenalty" placeholder="Presence Penalty" value="0" step="0.01" min="-2" max="2">
+                    <label for="arrangement">Message Format</label>
+                    <select id="arrangement">
+                        <option value="0">Default (system, user, assistant...)</option>
+                        <option value="1">No system role (user, assistant...)</option>
+                        <option value="2">No consecutive duplicates</option>
+                        <option value="3">Any (passthrough)</option>
+                    </select>
                 </div>
             </div>
             <div class="sidebar-tab-content" id="customize-tab">
@@ -319,7 +425,11 @@
                         Reset to Default
                     </button>
                     <label for="background">Background Image/Gif</label>
-                    <input type="file" id="background" accept="image/*, video/*">
+                    <input type="file" id="background" accept="image/*, video/*" style="display: none;">
+                    <button class="btn" onclick="document.getElementById('background').click()" style="width: 100%; margin-top: 8px; margin-bottom: 8px;">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">image</span>
+                        Choose Background
+                    </button>
                     <button class="btn" id="clearBgBtn" style="width: 100%; margin-top: 8px;">
                         <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">delete</span>
                         Clear Background
@@ -330,17 +440,23 @@
             <div class="sidebar-tab-content" id="preset-tab">
                 <h3 class="sidebar-header">Preset Settings</h3>
                 <div class="form">
-                    <label for="maxTokens">Max Tokens (Default: 4000)</label>
-                    <div id="presetToggles">
-                        <p>Using: <span id="presetName">No Preset</span></p>
-                        <button onclick="openPresetDialog()">Get Preset</button>
+                        <p>Using <span id="presetName">No Preset</span></p>
+                            <button onclick="openPresetDialog()" class="btn" style="width: 100%; margin-top: 8px;">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">save</span>
+                        Get Preset
+                    </button>
                         <br>
+                    <label for="maxTokens">Preset Prompts</label>
+                    <div id="presetToggles">
+
                         <div class="presetItem">
-                            <label class="switch">
-                            <input type="checkbox" id="presetStreamingToggle">
-                            <span class="slider"></span>
-                        </label>
-                        <p style="margin-top: 15px; margin-left: 10px;">Text-Streaming</p>
+                            <div class="toggle-container">
+                                <label class="switch">
+                                    <input type="checkbox" id="presetStreamingToggle">
+                                    <span class="slider"></span>
+                                </label>
+                                <p>Text-Streaming</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -367,7 +483,7 @@
         <span class="material-symbols-outlined menutoggle" onclick="toggleLeftSidebar()">
             menu
         </span>
-        <span class="chat-name">Select a Bot</span>
+        <span class="chat-name">Select a card</span>
         <span class="material-symbols-outlined menutoggle" onclick="toggleRightSidebar()">
             settings
         </span>
@@ -396,11 +512,21 @@
             send
         </span>
     </div>
+    <div id="tokenCounter" style="
+        position: fixed; bottom: 68px; right: 16px;
+        font-size: 0.72rem; color: var(--text-muted, #666);
+        background: var(--bg-elevated, #161616);
+        border: 1px solid var(--border-default, #1a1a1a);
+        border-radius: 6px; padding: 3px 8px;
+        pointer-events: none; opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+    "></div>
 
     <script src="scripts/theme.js?t=1"></script>
-    <script src="./scripts/ui/index_ui.js?t=3"></script>
+    <script src="./scripts/ui/index_ui.js?t=4"></script>
     <script src="./scripts/ui/chatRenderer_inline.js?t=1"></script>
-    <script type="module" src="./scripts/ui/index_modular.js?t=1"></script>
+    <script type="module" src="./scripts/ui/index_modular.js?t=2"></script>
 </body>
 
 </html>

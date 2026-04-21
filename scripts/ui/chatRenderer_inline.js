@@ -358,8 +358,25 @@ class ChatRendererInline {
   updateStreamingMessage(messageElement, text) {
     const textSpan = messageElement.querySelector('.message-text');
     if (textSpan) {
-      this.renderMessage(textSpan, text, true);
+      // If text is empty or just placeholder, show loading indicator
+      if (!text || text === '...' || !text.trim()) {
+        textSpan.innerHTML = this.createLoadingIndicator();
+      } else {
+        this.renderMessage(textSpan, text, true);
+      }
     }
+  }
+
+  createLoadingIndicator() {
+    return `
+      <div class="loading-indicator">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <span class="loading-text">Thinking</span>
+      </div>
+    `;
   }
 
   finalizeStreamingMessage(messageElement, text) {

@@ -7,13 +7,14 @@ const ChatService = {
    * Replace template variables in text
    * @param {string} text - Text to process
    * @param {Object} character - Character data
+   * @param {Object} persona - Optional persona data
    * @returns {string} Processed text with replacements
    */
-  replaceTemplateVars(text, character) {
+  replaceTemplateVars(text, character, persona = null) {
     if (!text) return text;
 
     const charName = character.name || "{{char}}";
-    const userName = "You"; // Default user name
+    const userName = persona ? persona.name || "You" : "You"; // Use persona name if available
 
     // Use split/join instead of replaceAll to avoid issues with special characters
     return text
@@ -28,7 +29,7 @@ const ChatService = {
       .split("{{original}}")
       .join(charName)
       .split("{{persona}}")
-      .join(character.personality || "")
+      .join(persona ? (persona.description || persona.persona || "") : (character.personality || ""))
       .split("{{scenario}}")
       .join(character.scenario || "")
       .split("{{description}}")
@@ -38,51 +39,52 @@ const ChatService = {
   /**
    * Build system prompt from character data
    * @param {Object} character - Character data
+   * @param {Object} persona - Optional persona data
    * @returns {string} System prompt
    */
-  buildSystemPrompt(character) {
+  buildSystemPrompt(character, persona = null) {
     const parts = [];
+
+    // Add persona context if available
+    if (persona && (persona.persona || persona.description)) {
+      const personaText = persona.persona || persona.description;
+      parts.push(`[User Persona: ${this.replaceTemplateVars(personaText, character, persona)}]`);
+    }
 
     // Add scenario if exists
     if (character.scenario) {
-      parts.push(this.replaceTemplateVars(character.scenario, character));
+      parts.push(this.replaceTemplateVars(character.scenario, character, persona));
     }
 
     // Add personality
     if (character.personality) {
       parts.push(
-        `[Personality: ${this.replaceTemplateVars(character.personality, character)}]`
+        `[Personality: ${this.replaceTemplateVars(character.personality, character, persona)}]`
       );
     }
 
     // Add description
     if (character.description) {
       parts.push(
-        `[Description: ${this.replaceTemplateVars(character.description, character)}]`
+        `[Description: ${this.replaceTemplateVars(character.description, character, persona)}]`
       );
     }
 
     // Add system prompt if exists
     if (character.system_prompt) {
-      parts.push(this.replaceTemplateVars(character.system_prompt, character));
+      parts.push(this.replaceTemplateVars(character.system_prompt, character, persona));
     }
 
     // Add example messages if exists
     if (character.mes_example) {
       parts.push(
-        `[Example Messages: ${this.replaceTemplateVars(character.mes_example, character)}]`
+        `[Example Messages: ${this.replaceTemplateVars(character.mes_example, character, persona)}]`
       );
     }
 
     return parts.join("\n\n");
   },
 
-  /**
-   * Find all chats for a specific bot
-   * @param {StorageManager} storageManager - Storage manager instance
-   * @param {string} botId - Bot ID
-   * @returns {Promise<Array>} Array of chats
-   */
   async getChatsForBot(storageManager, botId) {
     try {
       const chatIds = await storageManager.getChatList();
@@ -145,6 +147,10 @@ const ChatService = {
     window.currentBotId = botId;
     window.currentBotData = botData;
 
+    // Get selected persona
+    const selectedPersona = window.personaService.getSelectedPersona();
+    window.currentPersonaId = selectedPersona ? selectedPersona.id : null;
+
     // Create new chat
     window.currentChatId = await storageManager.createChat(botData);
 
@@ -156,7 +162,8 @@ const ChatService = {
     const character = botData.character;
     const firstMes = this.replaceTemplateVars(
       character.first_mes || "Hello!",
-      character
+      character,
+      selectedPersona
     );
     const avatar = character.avatar || botData.bot;
 
@@ -168,8 +175,8 @@ const ChatService = {
       },
     ];
 
-    // Build system prompt
-    const systemPrompt = this.buildSystemPrompt(character);
+    // Build system prompt with persona
+    const systemPrompt = this.buildSystemPrompt(character, selectedPersona);
     if (systemPrompt) {
       messages.unshift({
         role: "system",
@@ -177,10 +184,11 @@ const ChatService = {
       });
     }
 
-    // Save initial chat state with bot ID
+    // Save initial chat state with bot ID and persona ID
     await storageManager.saveChat(window.currentChatId, {
       bot: botData,
       botId: botId,
+      personaId: window.currentPersonaId,
       timestamp: new Date().getTime(),
       messages: messages,
     });
@@ -194,10 +202,11 @@ const ChatService = {
       content: firstMes,
     });
 
-    // Update chat storage with bot ID
+    // Update chat storage with bot ID and persona ID
     await storageManager.saveChat(window.currentChatId, {
       bot: botData,
       botId: window.currentBotId,
+      personaId: window.currentPersonaId,
       timestamp: new Date().getTime(),
       messages: messages,
     });
@@ -225,6 +234,13 @@ const ChatService = {
    */
   appendMessage(role, text, avatarUrl, name, messageId = null, messageIndex = null, versions = null, currentVersionIndex = null) {
     const chatContainer = document.querySelector(".chat-container");
+    // Use persona avatar for user messages if available
+    if (role === 'user') {
+      const selectedPersona = window.personaService.getSelectedPersona();
+      if (selectedPersona && selectedPersona.avatar) {
+        avatarUrl = selectedPersona.avatar;
+      }
+    }
     const messageDiv = window.chatRenderer.createMessageElement(
       role,
       text,
@@ -260,6 +276,10 @@ const ChatService = {
       return;
     }
 
+    // Get selected persona for avatar
+    const selectedPersona = window.personaService.getSelectedPersona();
+    const userAvatar = (selectedPersona && selectedPersona.avatar) ? selectedPersona.avatar : "https://cataas.com/cat";
+
     // Clear chat container
     const chatContainer = document.querySelector(".chat-container");
     chatContainer.innerHTML = "";
@@ -282,7 +302,7 @@ const ChatService = {
 
       const role = msg.role === "user" ? "user" : "assistant";
       const name = msg.role === "user" ? "You" : botName;
-      const msgAvatar = msg.role === "user" ? "https://cataas.com/cat" : avatar;
+      const msgAvatar = msg.role === "user" ? userAvatar : avatar;
 
       // Handle message versions for assistant messages
       let content = msg.content;

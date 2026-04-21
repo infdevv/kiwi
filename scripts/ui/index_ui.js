@@ -66,61 +66,6 @@ if (sidebarOverlayEl) {
   });
 }
 
-function deleteBot(btn) {
-  const bot = btn.closest(".bot");
-  bot.remove();
-}
-
-async function deleteBotFromUI(btn, botId) {
-  // Use custom confirm dialog if available, otherwise use native confirm
-  let confirmed = false;
-
-  if (window.showConfirmDialog) {
-    confirmed = await window.showConfirmDialog(
-      "Delete Bot",
-      "Are you sure you want to delete this bot?",
-    );
-  } else {
-    confirmed = confirm("Are you sure you want to delete this bot?");
-  }
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    const result = await window.storageManager.deleteBot(botId);
-    const bot = btn.closest(".bot");
-    bot.remove();
-
-    // Remove associated chats from the UI
-    if (result && result.deletedChats) {
-      result.deletedChats.forEach((chatId) => {
-        const chatEntry = document.querySelector(
-          `#chats-tab-content [data-chat-id="${chatId}"]`,
-        );
-        if (chatEntry) {
-          chatEntry.remove();
-        }
-      });
-
-      // Show "no chats" message if no chats left
-      const chatsTabContent = document.querySelector("#chats-tab-content");
-      const noChatsMsg = chatsTabContent.querySelector(".no-chats");
-      const remainingChats = chatsTabContent.querySelectorAll(".chat-item");
-
-      if (remainingChats.length === 0 && noChatsMsg) {
-        noChatsMsg.style.display = "flex";
-      }
-    }
-  } catch (error) {
-    console.error("Error deleting bot:", error);
-    alert("Error deleting bot");
-  }
-}
-
-window.deleteBotFromUI = deleteBotFromUI;
-
 // Preset dialog functions
 function openPresetDialog() {
   document.getElementById("presetDialog").classList.add("active");
@@ -236,8 +181,6 @@ window.switchSidebarTab = switchSidebarTab;
 window.switchLeftSidebarTab = switchLeftSidebarTab;
 window.toggleLeftSidebar = toggleLeftSidebar;
 window.toggleRightSidebar = toggleRightSidebar;
-window.deleteBot = deleteBot;
-window.deleteBotFromUI = deleteBotFromUI;
 window.openPresetDialog = openPresetDialog;
 window.closePresetDialog = closePresetDialog;
 window.browsePresets = browsePresets;

@@ -29,6 +29,10 @@ const DialogService = {
   showImageUpload() {
     document.getElementById("imageUploadSection").style.display = "block";
     document.getElementById("confirmUploadBtn").style.display = "inline-block";
+    // Trigger file input click to open file picker
+    setTimeout(() => {
+      document.getElementById("botImageInput").click();
+    }, 100);
   },
 
   /**
@@ -98,6 +102,10 @@ const DialogService = {
   showPresetUpload() {
     document.getElementById("presetUploadSection").style.display = "block";
     document.getElementById("confirmPresetBtn").style.display = "inline-block";
+    // Trigger file input click to open file picker
+    setTimeout(() => {
+      document.getElementById("presetFileInput").click();
+    }, 100);
   },
 
   /**

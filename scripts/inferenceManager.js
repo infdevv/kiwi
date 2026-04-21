@@ -19,17 +19,50 @@ class InferenceManager {
         }
     }
 
-    applyPreset(messages, preset) {
-        let keys = Object.keys(preset);
+    applyPreset(messages, preset, customPrompt = "", promptLocation = "before") {
         let presetPrompt = ""
-        for (let key of keys){
-            if (key.endsWith("-1")) { // active in ui
-                presetPrompt += "\n" + preset[key]
+        
+        // Handle new format with prompts array
+        if (preset.prompts && Array.isArray(preset.prompts)) {
+            for (let prompt of preset.prompts) {
+                // Check if prompt is enabled (either via 'enabled' field or 'state' field)
+                const isEnabled = prompt.enabled === true || prompt.state === 1 || prompt.state === true;
+                if (isEnabled && prompt.content) {
+                    presetPrompt += "\n\n" + prompt.content
+                }
+            }
+        } else {
+            // Handle old format with keys ending in -1
+            let keys = Object.keys(preset);
+            for (let key of keys){
+                if (key.endsWith("-1")) { // active in ui
+                    presetPrompt += "\n" + preset[key]
+                }
             }
         }
 
-        if (messages.length > 0 && presetPrompt.trim()) {
-            messages[0]["content"] = presetPrompt.trim() + "\n" + messages[0]["content"]
+        // Combine preset prompt with custom prompt
+        let combinedPrompt = ""
+        if (customPrompt && customPrompt.trim()) {
+            combinedPrompt = customPrompt.trim()
+        }
+        if (presetPrompt.trim()) {
+            if (combinedPrompt) {
+                combinedPrompt += "\n\n" + presetPrompt.trim()
+            } else {
+                combinedPrompt = presetPrompt.trim()
+            }
+        }
+
+        // Inject the combined prompt into the system message
+        if (messages.length > 0 && combinedPrompt) {
+            if (promptLocation === "after") {
+                // Add after system prompt content
+                messages[0]["content"] = messages[0]["content"] + "\n\n" + combinedPrompt
+            } else {
+                // Add before system prompt content (default)
+                messages[0]["content"] = combinedPrompt + "\n\n" + messages[0]["content"]
+            }
         }
         return messages
     }
@@ -80,11 +113,11 @@ class InferenceManager {
         return messages
     }
 
-    preprocessChat(messages, arrangement=0, preset={}, context_length=0) {
+    preprocessChat(messages, arrangement=0, preset={}, context_length=0, customPrompt="", promptLocation="before") {
         /*
-        
+
         arrangement:
-            0: system, user, assistant, user, assistant 
+            0: system, user, assistant, user, assistant
             1: user, assistant, user, assistant
             2: no repeats
             3: any
@@ -93,8 +126,8 @@ class InferenceManager {
 
         // steps: apply preset, apply context length, apply arrangement
 
-        messages = this.applyPreset(messages, preset)
-        
+        messages = this.applyPreset(messages, preset, customPrompt, promptLocation)
+
         // apply context length
 
         messages = this.applyContext(messages, context_length)
@@ -116,22 +149,37 @@ class InferenceManager {
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + this.api["api_key"]
             },
-            body: JSON.stringify({
+            body: JSON.stringify(Object.fromEntries(Object.entries({
                 "model": this.api["model"],
                 "messages": messages,
                 "stream": streaming,
-                "temperature": config.temperature || 0.6, // per qwen team's reccomendation
+                "temperature": config.temperature || 0.6,
                 "top_p": config.top_p || null,
+                "top_k": config.top_k || null,
+                "min_p": config.min_p || null,
                 "max_tokens": config.max_tokens || null,
                 "presence_penalty": config.presence_penalty || null,
                 "frequency_penalty": config.frequency_penalty || null,
-            }),
+            }).filter(([, v]) => v !== null))),
             signal: this.abortController.signal
         })
 
         if (streaming) {
-            for await (const chunk of response.body) {
-                streamCallback(chunk);
+            try {
+                for await (const chunk of response.body) {
+                    // Check if generation was aborted
+                    if (this.abortController === null || this.abortController.signal.aborted) {
+                        break;
+                    }
+                    streamCallback(chunk);
+                }
+            } catch (error) {
+                if (error.name === 'AbortError' || error.message.includes('aborted')) {
+                    // Generation was stopped intentionally
+                    console.log('Generation stopped by user');
+                } else {
+                    throw error;
+                }
             }
         }
         else {

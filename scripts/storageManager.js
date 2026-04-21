@@ -267,6 +267,15 @@ class StorageManager {
                     const utf8String = decodeURIComponent(escape(characterData));
                     let character = JSON.parse(utf8String);
                     
+                    // Normalise nested ST v2 format: { data: { name, ... } }
+                    if (character.data && !character.name) {
+                        character = character.data;
+                    }
+                    // ST cards store avatar as "none" — replace with the actual image
+                    if (!character.avatar || character.avatar === 'none') {
+                        character.avatar = bot.img;
+                    }
+
                     resolve({
                         "bot": bot.img,
                         "character": character
@@ -325,6 +334,7 @@ class StorageManager {
             id: id,
             name: persona.name || 'Unnamed Persona',
             description: persona.description || '',
+            avatar: persona.avatar || '',
             persona: persona.persona || '',
             scenario: persona.scenario || '',
             mes_example: persona.mes_example || '',
@@ -337,6 +347,7 @@ class StorageManager {
         console.log('[StorageManager] Saving persona to IndexedDB:', {
             id: id,
             name: personaData.name,
+            hasAvatar: !!personaData.avatar,
             hasPersona: !!personaData.persona,
             hasScenario: !!personaData.scenario,
             hasMesExample: !!personaData.mes_example
@@ -403,6 +414,7 @@ class StorageManager {
             id: persona_id,
             name: persona.name || 'Unnamed Persona',
             description: persona.description || '',
+            avatar: persona.avatar || '',
             persona: persona.persona || '',
             scenario: persona.scenario || '',
             mes_example: persona.mes_example || '',

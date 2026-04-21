@@ -31,6 +31,10 @@
   margin-bottom: 12px;
 }
 
+.presetItem p {
+  margin: 0;
+}
+
 /* Logo */
 .logo {
   font-size: 1.5rem;

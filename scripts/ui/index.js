@@ -448,42 +448,13 @@ async function sendMessage() {
     }
   }
 
-  // Get custom prompt
-  const customPrompt = document.getElementById("prompt").value;
-  const promptLocation = document.getElementById("promptLocation").value;
-
-  if (customPrompt) {
-    // Apply template variable replacement to custom prompt
-    const processedPrompt = replaceTemplateVars(customPrompt, character);
-
-    if (promptLocation === "before") {
-      // Find system message and prepend
-      const sysMsg = messages.find((m) => m.role === "system");
-      if (sysMsg) {
-        sysMsg.content = processedPrompt + "\n\n" + sysMsg.content;
-      } else {
-        messages.unshift({
-          role: "system",
-          content: processedPrompt,
-        });
-      }
-    } else {
-      // Append after system
-      const sysMsg = messages.find((m) => m.role === "system");
-      if (sysMsg) {
-        sysMsg.content = sysMsg.content + "\n\n" + processedPrompt;
-      } else {
-        messages.push({
-          role: "system",
-          content: processedPrompt,
-        });
-      }
-    }
-  }
-
   // Get context length from UI
   const contextLength =
     parseInt(document.getElementById("contextLength").value) || 0;
+
+  // Get custom prompt and location from UI
+  const customPrompt = document.getElementById("prompt")?.value || "";
+  const promptLocation = document.getElementById("promptLocation")?.value || "before";
 
   // Preprocess messages
   const processedMessages = inferenceManager.preprocessChat(
@@ -491,6 +462,8 @@ async function sendMessage() {
     0, // arrangement
     preset,
     contextLength, // context length (0 = no limit)
+    customPrompt,
+    promptLocation,
   );
 
   console.log('[sendMessage] Creating assistant message at index:', assistantMessageIndex);
@@ -584,7 +557,14 @@ async function sendMessage() {
 }
 
 function saveApiConfig() {
-  const endpoint = document.getElementById("apiEndpoint").value;
+  let endpoint = document.getElementById("apiEndpoint").value;
+  // quickly process the endpoint to resolve it
+  if (!endpoint.endsWith("chat/completions") && endpoint.replaceAll("/","").endswith("v1")){
+    if (endpoint.endsWith("/")) endpoint += "chat/completions"
+    else {
+      endpoint += "/chat/completions"
+    }
+  }
   const apiKey = document.getElementById("apiKey").value;
   const model = document.getElementById("apiModel").value;
   const streaming = document.getElementById("streamingToggle").checked;
@@ -1338,30 +1318,12 @@ async function rerollMessage(messageIndex) {
     }
   }
 
-  // Get custom prompt
-  const customPrompt = document.getElementById("prompt").value;
-  const promptLocation = document.getElementById("promptLocation").value;
-  const character = currentBotData.character;
-
-  if (customPrompt) {
-    const processedPrompt = replaceTemplateVars(customPrompt, character);
-    const sysMsg = messagesToUse.find((m) => m.role === "system");
-    if (sysMsg) {
-      if (promptLocation === "before") {
-        sysMsg.content = processedPrompt + "\n\n" + sysMsg.content;
-      } else {
-        sysMsg.content = sysMsg.content + "\n\n" + processedPrompt;
-      }
-    } else {
-      messagesToUse.unshift({
-        role: "system",
-        content: processedPrompt,
-      });
-    }
-  }
-
   // Get context length
   const contextLength = parseInt(document.getElementById("contextLength").value) || 0;
+
+  // Get custom prompt and location from UI
+  const customPrompt = document.getElementById("prompt")?.value || "";
+  const promptLocation = document.getElementById("promptLocation")?.value || "before";
 
   // Preprocess messages
   const processedMessages = inferenceManager.preprocessChat(
@@ -1369,6 +1331,8 @@ async function rerollMessage(messageIndex) {
     0,
     preset,
     contextLength,
+    customPrompt,
+    promptLocation,
   );
 
   // Get the message element

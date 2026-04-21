@@ -134,7 +134,7 @@ const ThemeManager = {
     setBaseColor(color) {
         this.baseAccentColor = color;
         const generatedPalette = this.generatePaletteFromColor(color);
-        
+
         // Update ALL colors (accents + backgrounds + borders)
         this.setColor('accentPrimary', generatedPalette.accentPrimary);
         this.setColor('accentSecondary', generatedPalette.accentSecondary);
@@ -151,12 +151,28 @@ const ThemeManager = {
         this.setColor('borderMedium', generatedPalette.borderMedium);
         this.setColor('messageBg', generatedPalette.messageBg);
 
+        // Update individual color picker UI values
+        this.updateIndividualColorPickersUI();
+
         // Save the base color
         try {
             localStorage.setItem('kiwi-base-color', color);
         } catch (e) {
             console.warn('Failed to save base color:', e);
         }
+    },
+
+    /**
+     * Update individual color picker input values to match generated palette
+     */
+    updateIndividualColorPickersUI() {
+        const pickers = document.querySelectorAll('.individualColorPicker');
+        pickers.forEach(picker => {
+            const key = picker.dataset.color;
+            if (this.colors[key]) {
+                picker.value = this.colors[key];
+            }
+        });
     },
 
     /**
