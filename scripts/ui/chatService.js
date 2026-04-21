@@ -214,6 +214,10 @@ const ChatService = {
     // Update UI to show chat name
     document.querySelector(".chat-name").textContent = character.name || "Bot";
 
+    // Add the new chat to the chat tab UI immediately
+    const dateStr = window.botService.formatChatDate(new Date().getTime());
+    window.botService.addChatToUI(window.currentChatId, botId, botData, dateStr);
+
     // Close left sidebar on mobile
     if (window.innerWidth < 768) {
       window.toggleLeftSidebar();

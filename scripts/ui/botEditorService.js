@@ -157,7 +157,9 @@ const BotEditorService = {
     if (!this.currentBotId) return;
 
     try {
+      const botIdToEdit = this.currentBotId;
       this.closeBotOptionsDialog();
+      this.currentBotId = botIdToEdit;
 
       const botData = await window.storageManager.loadBot(this.currentBotId);
       this.currentBotData = botData;

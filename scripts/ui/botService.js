@@ -224,9 +224,9 @@ const BotService = {
     chatEntry.style.cursor = "pointer";
     chatEntry.innerHTML = `
       <img src="${avatar}" alt="${botName}">
-      <div style="flex: 1; overflow: hidden; margin-left: 58px;">
-        <p class="bot-name" style="margin: 0; font-size: 0.95rem;">${botName}</p>
-        <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #888;">${dateStr}</p>
+      <div style="flex: 1; overflow: hidden; margin-left: 58px; margin-right: 40px; min-width: 0;">
+        <p class="bot-name" style="margin: 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${botName}</p>
+        <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${dateStr}</p>
       </div>
       <span class="material-symbols-outlined delete-btn">
         delete
