@@ -6,25 +6,15 @@ const SettingsService = {
   /**
    * Save API configuration
    */
-  saveApiConfig(inferenceManagerInstance) {
+  saveApiConfig(inferenceManagerClass) {
     let endpoint = document.getElementById("apiEndpoint").value;
-    //quickly process the endpoint to resolve it
-    if (
-      !endpoint.endsWith("chat/completions") &&
-      endpoint.replaceAll("/", "").endswith("v1")
-    ) {
-      if (endpoint.endsWith("/")) endpoint += "chat/completions";
-      else {
-        endpoint += "/chat/completions";
-      }
-    }
     const apiKey = document.getElementById("apiKey").value;
     const model = document.getElementById("apiModel").value;
     const streaming = document.getElementById("streamingToggle").checked;
 
     if (!endpoint || !apiKey || !model) {
       alert("Please fill in all API fields");
-      return;
+      return null;
     }
 
     const apiConfig = {
@@ -33,11 +23,6 @@ const SettingsService = {
       model: model,
       streaming: streaming,
     };
-
-    // Update inference manager
-    if (inferenceManagerInstance) {
-      inferenceManagerInstance.api = apiConfig;
-    }
 
     localStorage.setItem("kiwi_api_config", JSON.stringify(apiConfig));
 
@@ -51,6 +36,9 @@ const SettingsService = {
     if (window.toggleRightSidebar) {
       toggleRightSidebar();
     }
+
+    // Always return a fresh InferenceManager with the new config
+    return new inferenceManagerClass(apiConfig);
   },
 
   /**

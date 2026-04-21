@@ -18,6 +18,12 @@ import { BotEditorService } from "./botEditorService.js";
 const storageManager = new StorageManager();
 let inferenceManager = null;
 
+// Wrapper so closures always see the current inferenceManager value
+const inferenceManagerRef = {
+  get current() { return inferenceManager; },
+  set current(v) { inferenceManager = v; }
+};
+
 // Make services available globally for callbacks
 window.storageManager = storageManager;
 window.dialogService = DialogService;
@@ -54,7 +60,10 @@ function init() {
   // Setup UI
   SidebarManager.init(() => DialogService.openUploadDialog(), () => DialogService.openPersonaDialog());
   DialogService.setupDialogListeners(
-    () => SettingsService.saveApiConfig(inferenceManager),
+    () => {
+      const newManager = SettingsService.saveApiConfig(InferenceManager);
+      if (newManager) inferenceManager = newManager;
+    },
     () => SettingsService.clearBackground()
   );
 
@@ -234,7 +243,7 @@ function setupGlobalCallbacks() {
   };
 
   window.rerollMessage = (messageIndex) => {
-    MessageService.rerollMessage(messageIndex, storageManager, inferenceManager);
+    MessageService.rerollMessage(messageIndex, storageManager, inferenceManagerRef.current);
   };
 
   window.navigateMessageVersion = (messageIndex, newVersionIndex) => {
@@ -246,7 +255,10 @@ function setupGlobalCallbacks() {
   };
 
   // Settings functions
-  window.saveApiConfig = () => SettingsService.saveApiConfig(inferenceManager);
+  window.saveApiConfig = () => {
+    const newManager = SettingsService.saveApiConfig(InferenceManager);
+    if (newManager) inferenceManager = newManager;
+  };
   window.saveGenerationSettings = () => SettingsService.saveGenerationSettings();
   window.saveLlmSettings = () => SettingsService.saveLlmSettings();
 }
@@ -570,7 +582,7 @@ function setupChatListeners() {
 
   if (sendBtn) {
     sendBtn.addEventListener("click", () => {
-      MessageService.sendMessage(storageManager, inferenceManager);
+      MessageService.sendMessage(storageManager, inferenceManagerRef.current);
     });
   }
 
@@ -578,7 +590,7 @@ function setupChatListeners() {
     messageInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        MessageService.sendMessage(storageManager, inferenceManager);
+        MessageService.sendMessage(storageManager, inferenceManagerRef.current);
       }
     });
 
