@@ -101,12 +101,22 @@ class ChatRendererInline {
     }
   }
 
+  isHtmlRenderingEnabled() {
+    try {
+      const s = JSON.parse(localStorage.getItem('kiwi_generation_settings') || '{}');
+      return s.htmlRendering === true;
+    } catch (_) { return false; }
+  }
+
   renderMessage(container, text, isStreaming = false) {
     if (!container) return;
-    const html = this.renderMarkdown(text);
-    container.innerHTML = html;
-    if (!isStreaming) {
-      this.attachCopyButtonListeners(container);
+    if (this.isHtmlRenderingEnabled()) {
+      container.innerHTML = text || '';
+    } else {
+      container.innerHTML = this.renderMarkdown(text);
+      if (!isStreaming) {
+        this.attachCopyButtonListeners(container);
+      }
     }
   }
 

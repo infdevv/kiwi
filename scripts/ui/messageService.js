@@ -32,6 +32,14 @@ const MessageService = {
       return;
     }
 
+    // Delegate to room service when in a group chat
+    if (window.currentRoomData && window.roomService) {
+      const message = input.value.trim();
+      if (!message) return;
+      await window.roomService.sendGroupMessage(message, storageManager, inferenceManager);
+      return;
+    }
+
     const message = input.value.trim();
 
     if (!message) {
@@ -250,6 +258,12 @@ const MessageService = {
       return;
     }
 
+    // Both single chats and rooms are supported
+    if (!window.currentBotData && !window.currentRoomData) {
+      console.error('[editMessage] Blocked: neither currentBotData nor currentRoomData set');
+      return;
+    }
+
     const chat = await storageManager.getChat(window.currentChatId);
     if (!chat || !chat.messages) return;
 
@@ -283,6 +297,12 @@ const MessageService = {
       return;
     }
 
+    // Both single chats and rooms are supported
+    if (!window.currentBotData && !window.currentRoomData) {
+      console.error('[saveEditedMessage] Blocked: neither currentBotData nor currentRoomData set');
+      return;
+    }
+
     const chat = await storageManager.getChat(window.currentChatId);
     if (!chat || !chat.messages) return;
 
@@ -306,8 +326,9 @@ const MessageService = {
       window.chatRenderer.updateMessageContent(messageElement, newText);
     }
 
-    // If this is an assistant message, regenerate all subsequent messages
-    if (role === 'assistant') {
+    // If this is an assistant message in a single chat, regenerate all subsequent messages
+    // For rooms, skip this since room messages don't support regeneration
+    if (role === 'assistant' && !window.currentRoomData) {
       await this.regenerateSubsequentMessages(messageIndex, chat, storageManager);
     }
   },
@@ -337,6 +358,13 @@ const MessageService = {
       console.error('[rerollMessage] Blocked: no currentChatId');
       return;
     }
+
+    // Block reroll for room messages
+    if (window.currentRoomData) {
+      ToastService.error('Reroll is not supported in group chats');
+      return;
+    }
+
     if (!window.currentBotData) {
       console.error('[rerollMessage] Blocked: no currentBotData');
       return;
@@ -553,6 +581,12 @@ const MessageService = {
       return;
     }
 
+    // Both single chats and rooms are supported
+    if (!window.currentBotData && !window.currentRoomData) {
+      console.error('[navigateMessageVersion] Blocked: neither currentBotData nor currentRoomData set');
+      return;
+    }
+
     const chat = await storageManager.getChat(window.currentChatId);
     if (!chat || !chat.messages) {
       console.error('[navigateMessageVersion] No chat or messages');
@@ -609,6 +643,12 @@ const MessageService = {
       return;
     }
 
+    // Both single chats and rooms are supported
+    if (!window.currentBotData && !window.currentRoomData) {
+      console.error('[deleteMessage] Blocked: neither currentBotData nor currentRoomData set');
+      return;
+    }
+
     const confirmed = await window.showConfirmDialog(
       "Delete Message",
       "Are you sure you want to delete this message?",
@@ -637,9 +677,12 @@ const MessageService = {
     }
 
     // Re-index remaining messages
-    ChatService.reindexMessages();
+    window.chatService?.reindexMessages?.();
 
-    window.botService.updateChatTimestamp(window.currentChatId);
+    // Update chat timestamp (works for both single chats and rooms)
+    if (window.currentBotData) {
+      window.botService.updateChatTimestamp(window.currentChatId);
+    }
   },
 
   /**

@@ -219,6 +219,23 @@
         </div>
     </div>
 
+    <div class="dialog-overlay" id="roomDialog">
+        <div class="dialog dialog-large">
+            <h3>Create Room</h3>
+            <p style="margin-bottom: 16px; color: #888; font-size: 0.9rem;">Name the room and pick at least 2 bots.</p>
+            <div class="form">
+                <label for="roomNameInput">Room Name</label>
+                <input type="text" id="roomNameInput" placeholder="e.g., Adventure Party, Debate Club...">
+                <label style="margin-top: 12px;">Participants</label>
+                <div id="roomBotPicker" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding: 4px 0;"></div>
+            </div>
+            <div class="dialog-buttons" style="margin-top: 16px;">
+                <button class="btn" id="cancelRoomBtn">Cancel</button>
+                <button class="btn" id="confirmRoomBtn" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); border: none;">Create Room</button>
+            </div>
+        </div>
+    </div>
+
     <aside class="sidebar sidebar-left" id="leftSidebar">
         <div style="display: flex;">
             <h3 style="margin-top: 6px;" class="logo">KiwiAI</h3>
@@ -242,6 +259,10 @@
             <div class="bot" id="addBotBtn">
                 <span class="material-symbols-outlined add">add</span>
                 <p class="bot-name">Add Bot</p>
+            </div>
+            <div class="bot" id="addRoomBtn">
+                <span class="material-symbols-outlined add">group_add</span>
+                <p class="bot-name">Create Room</p>
             </div>
             <div class="bot" id="createBotBtn" style="display: none;">
                 <span class="material-symbols-outlined add">edit_note</span>
@@ -306,6 +327,13 @@
             <div class="sidebar-tab-content" id="generation-tab">
                 <h3 class="sidebar-header">Generation Settings</h3>
                 <div class="form">
+                    <label for="generationPreset">Quick Preset</label>
+                    <select id="generationPreset" onchange="if(this.value){applyGenerationPreset(this.value);this.value='';}">
+                        <option value="">Custom</option>
+                        <option value="deterministic">Deterministic (Focused)</option>
+                        <option value="balanced">Balanced</option>
+                        <option value="creative">Creative (Experimental)</option>
+                    </select>
                     <label for="contextLength">Context Length (0 = unlimited)</label>
                     <input type="number" id="contextLength" placeholder="Context Length" value="0" min="0">
                     <label for="maxTokens">Max Tokens (Default: 4000)</label>
@@ -329,6 +357,13 @@
                         <option value="2">No consecutive duplicates</option>
                         <option value="3">Any (passthrough)</option>
                     </select>
+                    <div class="toggle-container" style="margin-top: 12px;">
+                        <label class="switch">
+                            <input type="checkbox" id="htmlRenderingToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <p>Render HTML in responses</p>
+                    </div>
                 </div>
             </div>
             <div class="sidebar-tab-content" id="customize-tab">
@@ -433,6 +468,17 @@
                     <button class="btn" id="clearBgBtn" style="width: 100%; margin-top: 8px;">
                         <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">delete</span>
                         Clear Background
+                    </button>
+
+                    <h4 style="margin: 20px 0 12px 0; color: #fff; font-size: 0.95rem;">Data Management</h4>
+                    <button class="btn" onclick="exportAllData()" style="width: 100%; margin-top: 8px;">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">file_download</span>
+                        Export All Data (JSON)
+                    </button>
+                    <input type="file" id="importDataInput" accept=".json" style="display: none;">
+                    <button class="btn" onclick="document.getElementById('importDataInput').click()" style="width: 100%; margin-top: 8px;">
+                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; font-size: 18px;">file_upload</span>
+                        Import Data (JSON)
                     </button>
                 </div>
                 <br>

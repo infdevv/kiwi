@@ -269,7 +269,7 @@ const BotService = {
       for (const chatId of chatIds) {
         try {
           const chat = await storageManager.getChat(chatId);
-          if (!chat || !chat.bot) continue;
+          if (!chat || chat.type === 'room' || !chat.bot) continue;
 
           const botData = chat.bot;
           const botId = chat.botId || botData.id || chatId;

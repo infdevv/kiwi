@@ -120,6 +120,9 @@ const ChatService = {
    * @param {StorageManager} storageManager - Storage manager instance
    */
   async startChat(botId, botData, storageManager) {
+    // Clean up room context when switching to single chat
+    window.roomService?.clearRoomContext?.();
+
     // Check for existing chats with this bot
     const existingChats = await this.getChatsForBot(storageManager, botId);
 
@@ -146,6 +149,7 @@ const ChatService = {
 
     window.currentBotId = botId;
     window.currentBotData = botData;
+    window.currentRoomData = null;
 
     // Get selected persona
     const selectedPersona = window.personaService.getSelectedPersona();
@@ -269,9 +273,13 @@ const ChatService = {
    * @param {StorageManager} storageManager - Storage manager instance
    */
   async loadChat(chatId, botData, botId, storageManager) {
+    // Clean up room context when switching to single chat
+    window.roomService?.clearRoomContext?.();
+
     window.currentChatId = chatId;
     window.currentBotId = botId;
     window.currentBotData = botData;
+    window.currentRoomData = null;
 
     // Get the chat data
     const chat = await storageManager.getChat(chatId);

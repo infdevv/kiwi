@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"\\\\.js$\")"
+      "Bash(grep -E \"\\\\.js$\")",
+      "Bash(node -c scripts/ui/messageService.js)",
+      "Bash(node -c scripts/ui/roomService.js)",
+      "Bash(node -c scripts/ui/chatService.js)"
     ]
   }
 }

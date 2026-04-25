@@ -13,6 +13,8 @@ import { SettingsService } from "./settingsService.js";
 import { MessageService } from "./messageService.js";
 import { PersonaService } from "./personaService.js";
 import { BotEditorService } from "./botEditorService.js";
+import { ToastService } from "./toastService.js";
+import { RoomService } from "./roomService.js";
 
 // Initialize managers
 const storageManager = new StorageManager();
@@ -34,11 +36,13 @@ window.settingsService = SettingsService;
 window.messageService = MessageService;
 window.personaService = PersonaService;
 window.botEditorService = BotEditorService;
+window.roomService = RoomService;
 
 // Application state
 window.currentChatId = null;
 window.currentBotId = null;
 window.currentBotData = null;
+window.currentRoomData = null;
 window.isGenerating = false;
 window.currentPersonaId = null;
 
@@ -75,6 +79,7 @@ function init() {
   // Load saved data
   BotService.loadSavedBots(storageManager);
   BotService.loadSavedChats(storageManager);
+  RoomService.loadSavedRooms(storageManager);
   PersonaService.loadPersonas(storageManager);
   PersonaService.loadSelectedPersona(storageManager);
 
@@ -194,6 +199,26 @@ function setupGlobalCallbacks() {
     BotEditorService.openCreateBotDialog();
   };
 
+  // Room globals
+  window.loadRoom = (roomId) => RoomService.loadRoom(roomId, storageManager);
+
+  const addRoomBtn = document.getElementById('addRoomBtn');
+  if (addRoomBtn) {
+    addRoomBtn.addEventListener('click', () => RoomService.openCreateRoomDialog(storageManager));
+  }
+
+  const confirmRoomBtn = document.getElementById('confirmRoomBtn');
+  if (confirmRoomBtn) {
+    confirmRoomBtn.addEventListener('click', () => RoomService.createRoom(storageManager));
+  }
+
+  const cancelRoomBtn = document.getElementById('cancelRoomBtn');
+  if (cancelRoomBtn) {
+    cancelRoomBtn.addEventListener('click', () => {
+      document.getElementById('roomDialog').classList.remove('active');
+    });
+  }
+
   // Make deletePersona available globally
   window.deletePersona = (event, personaId) => {
     PersonaService.deletePersona(event, personaId, storageManager);
@@ -261,6 +286,20 @@ function setupGlobalCallbacks() {
   };
   window.saveGenerationSettings = () => SettingsService.saveGenerationSettings();
   window.saveLlmSettings = () => SettingsService.saveLlmSettings();
+  window.applyGenerationPreset = (name) => SettingsService.applyGenerationPreset(name);
+
+  // Data export/import
+  window.exportAllData = () => exportAllData();
+
+  // Wire up import file input
+  const importDataInput = document.getElementById('importDataInput');
+  if (importDataInput) {
+    importDataInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) importAllData(file);
+      importDataInput.value = '';
+    });
+  }
 }
 
 /**
@@ -344,6 +383,30 @@ function updatePresetUI() {
 }
 
 /**
+ * Build the streaming toggle DOM element that lives inside #presetToggles
+ */
+function buildStreamingToggle(checked = false) {
+  const item = document.createElement('div');
+  item.className = 'presetItem';
+  item.innerHTML = `
+    <div class="toggle-container">
+      <label class="switch">
+        <input type="checkbox" id="presetStreamingToggle"${checked ? ' checked' : ''}>
+        <span class="slider"></span>
+      </label>
+      <p>Text-Streaming</p>
+    </div>`;
+
+  const checkbox = item.querySelector('#presetStreamingToggle');
+  const streamingToggle = document.getElementById('streamingToggle');
+  checkbox.addEventListener('change', () => {
+    if (streamingToggle) streamingToggle.checked = checkbox.checked;
+    if (window.saveLlmSettings) window.saveLlmSettings();
+  });
+  return item;
+}
+
+/**
  * Render preset prompts as toggle items in the UI
  */
 function renderPresetPrompts(presetData) {
@@ -353,17 +416,26 @@ function renderPresetPrompts(presetData) {
     return;
   }
   
+  // Preserve streaming toggle state before clearing
+  const streamingChecked = document.getElementById("presetStreamingToggle")?.checked ?? false;
+
   // Check if preset has prompts array
   if (!presetData.prompts || !Array.isArray(presetData.prompts)) {
     console.log('[Preset] No prompts array in preset data');
-    presetTogglesContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem; padding: 10px;">No prompts in this preset</p>';
+    presetTogglesContainer.innerHTML = '';
+    presetTogglesContainer.appendChild(buildStreamingToggle(streamingChecked));
+    presetTogglesContainer.appendChild(Object.assign(document.createElement('p'), {
+      textContent: 'No prompts in this preset',
+      style: 'color: #888; font-size: 0.9rem; padding: 10px;'
+    }));
     return;
   }
-  
+
   console.log('[Preset] Rendering', presetData.prompts.length, 'prompts');
 
   // Clear existing content
   presetTogglesContainer.innerHTML = '';
+  presetTogglesContainer.appendChild(buildStreamingToggle(streamingChecked));
 
   // Collapsible header
   const headerDiv = document.createElement('div');
@@ -651,6 +723,93 @@ function setupCreateBotButton() {
     createBotBtn.addEventListener("click", () => {
       BotEditorService.openCreateBotDialog();
     });
+  }
+}
+
+/**
+ * Export all IndexedDB data + relevant localStorage keys as a JSON backup file
+ */
+async function exportAllData() {
+  try {
+    ToastService.info('Preparing export…');
+
+    const [chats, bots, personas] = await Promise.all([
+      storageManager.getAllChats(),
+      storageManager.getAllBots(),
+      storageManager.getAllPersonas()
+    ]);
+
+    const lsKeys = [
+      'kiwi_api_config', 'kiwi_generation_settings', 'kiwi_llm_settings',
+      'currentPreset', 'currentPresetName', 'theme_colors', 'kiwi_background'
+    ];
+    const localStorageData = {};
+    lsKeys.forEach(k => {
+      const v = localStorage.getItem(k);
+      if (v !== null) localStorageData[k] = v;
+    });
+
+    const exportPayload = {
+      version: 1,
+      exportDate: new Date().toISOString(),
+      indexedDB: { chats, bots, personas },
+      localStorage: localStorageData
+    };
+
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kiwi_backup_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    ToastService.success(`Exported ${bots.length} bots, ${chats.length} chats, ${personas.length} personas.`);
+  } catch (err) {
+    console.error('[Export] Data export failed:', err);
+    ToastService.error('Export failed: ' + err.message);
+  }
+}
+
+/**
+ * Import a previously exported JSON backup file
+ * @param {File} file - The JSON backup file
+ */
+async function importAllData(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    if (!data.version || !data.indexedDB) {
+      ToastService.error('Invalid backup file format.');
+      return;
+    }
+
+    const confirmed = await DialogService.showConfirmDialog(
+      'Import Data',
+      `Import ${data.indexedDB.bots?.length ?? 0} bots, ${data.indexedDB.chats?.length ?? 0} chats, and ${data.indexedDB.personas?.length ?? 0} personas? Existing items with the same ID will be overwritten.`
+    );
+    if (!confirmed) return;
+
+    const { chats = [], bots = [], personas = [] } = data.indexedDB;
+
+    await Promise.all([
+      ...bots.map(b => storageManager.putBot(b)),
+      ...chats.map(c => storageManager.putChat(c)),
+      ...personas.map(p => storageManager.putPersona(p))
+    ]);
+
+    if (data.localStorage) {
+      Object.entries(data.localStorage).forEach(([k, v]) => {
+        // Never import the background by default — it's large and optional
+        if (k !== 'kiwi_background') localStorage.setItem(k, v);
+      });
+    }
+
+    ToastService.success('Import complete! Reload the page to see all changes.', 6000);
+  } catch (err) {
+    console.error('[Import] Data import failed:', err);
+    ToastService.error('Import failed: ' + err.message);
   }
 }
 

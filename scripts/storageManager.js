@@ -68,6 +68,28 @@ class StorageManager {
         });
     }
 
+    async createRoomChat(roomName, participants) {
+        const db = await this.openDB();
+        const id = gen_uuid();
+        const room = {
+            id,
+            type: 'room',
+            roomName,
+            participants,
+            timestamp: new Date().getTime(),
+            messages: []
+        };
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(CHAT_STORE, 'readwrite');
+            const store = tx.objectStore(CHAT_STORE);
+            const request = store.put(room);
+
+            request.onsuccess = () => resolve(id);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
     async getChatList() {
         const db = await this.openDB();
 
@@ -467,6 +489,71 @@ class StorageManager {
             const request = store.getAll();
 
             request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getAllChats() {
+        const db = await this.openDB();
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(CHAT_STORE, 'readonly');
+            const store = tx.objectStore(CHAT_STORE);
+            const request = store.getAll();
+
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getAllBots() {
+        const db = await this.openDB();
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(BOT_STORE, 'readonly');
+            const store = tx.objectStore(BOT_STORE);
+            const request = store.getAll();
+
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async putBot(bot) {
+        const db = await this.openDB();
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(BOT_STORE, 'readwrite');
+            const store = tx.objectStore(BOT_STORE);
+            const request = store.put(bot);
+
+            request.onsuccess = () => resolve(bot.id);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async putChat(chat) {
+        const db = await this.openDB();
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(CHAT_STORE, 'readwrite');
+            const store = tx.objectStore(CHAT_STORE);
+            const request = store.put(chat);
+
+            request.onsuccess = () => resolve(chat.id);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async putPersona(persona) {
+        const db = await this.openDB();
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(PERSONA_STORE, 'readwrite');
+            const store = tx.objectStore(PERSONA_STORE);
+            const request = store.put(persona);
+
+            request.onsuccess = () => resolve(persona.id);
             request.onerror = () => reject(request.error);
         });
     }

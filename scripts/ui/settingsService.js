@@ -55,6 +55,7 @@ const SettingsService = {
       frequencyPenalty: document.getElementById("frequencyPenalty").value,
       presencePenalty: document.getElementById("presencePenalty").value,
       arrangement: document.getElementById("arrangement")?.value ?? "0",
+      htmlRendering: document.getElementById("htmlRenderingToggle")?.checked ?? false,
     };
 
     localStorage.setItem(
@@ -67,7 +68,7 @@ const SettingsService = {
    * Save LLM/preset settings to localStorage
    */
   saveLlmSettings() {
-    const streaming = document.getElementById("presetStreamingToggle").checked;
+    const streaming = document.getElementById("presetStreamingToggle")?.checked ?? false;
     const prompt = document.getElementById("prompt").value;
     const promptLocation = document.getElementById("promptLocation").value;
     const currentPreset = localStorage.getItem("currentPreset");
@@ -167,6 +168,9 @@ const SettingsService = {
           settings.presencePenalty;
       if (settings.arrangement && document.getElementById("arrangement"))
         document.getElementById("arrangement").value = settings.arrangement;
+      const htmlToggle = document.getElementById("htmlRenderingToggle");
+      if (htmlToggle && settings.htmlRendering !== undefined)
+        htmlToggle.checked = settings.htmlRendering;
     }
   },
 
@@ -247,6 +251,10 @@ const SettingsService = {
         input.addEventListener("change", () => this.saveGenerationSettings());
       }
     });
+    const htmlRenderingToggle = document.getElementById("htmlRenderingToggle");
+    if (htmlRenderingToggle) {
+      htmlRenderingToggle.addEventListener("change", () => this.saveGenerationSettings());
+    }
 
     // LLM settings auto-save
     const promptInput = document.getElementById("prompt");
@@ -345,6 +353,50 @@ const SettingsService = {
   clearBackground() {
     localStorage.removeItem("kiwi_background");
     document.body.style.backgroundImage = "none";
+  },
+
+  /**
+   * Apply a quick generation preset to all generation setting fields
+   * @param {string} presetName - 'deterministic' | 'balanced' | 'creative'
+   */
+  applyGenerationPreset(presetName) {
+    const presets = {
+      deterministic: {
+        contextLength: 0, maxTokens: 4000, temperature: 0.3,
+        topP: 0.85, topK: 20, minP: 0.1,
+        frequencyPenalty: 0.5, presencePenalty: 0.2, arrangement: 0
+      },
+      balanced: {
+        contextLength: 0, maxTokens: 4000, temperature: 0.7,
+        topP: 0.95, topK: 0, minP: 0,
+        frequencyPenalty: 0, presencePenalty: 0, arrangement: 0
+      },
+      creative: {
+        contextLength: 0, maxTokens: 4000, temperature: 1.3,
+        topP: 0.98, topK: 100, minP: 0.05,
+        frequencyPenalty: -0.2, presencePenalty: 0.1, arrangement: 0
+      }
+    };
+
+    const preset = presets[presetName];
+    if (!preset) return;
+
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+
+    set('contextLength', preset.contextLength);
+    set('maxTokens', preset.maxTokens);
+    set('temperature', preset.temperature);
+    set('topP', preset.topP);
+    set('topK', preset.topK);
+    set('minP', preset.minP);
+    set('frequencyPenalty', preset.frequencyPenalty);
+    set('presencePenalty', preset.presencePenalty);
+    set('arrangement', preset.arrangement);
+
+    this.saveGenerationSettings();
   },
 };
 
