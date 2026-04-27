@@ -15,6 +15,7 @@ import { PersonaService } from "./personaService.js";
 import { BotEditorService } from "./botEditorService.js";
 import { ToastService } from "./toastService.js";
 import { RoomService } from "./roomService.js";
+import { LorebookService } from "./lorebookService.js";
 
 // Initialize managers
 const storageManager = new StorageManager();
@@ -37,6 +38,7 @@ window.messageService = MessageService;
 window.personaService = PersonaService;
 window.botEditorService = BotEditorService;
 window.roomService = RoomService;
+window.lorebookService = LorebookService;
 
 // Application state
 window.currentChatId = null;
@@ -55,6 +57,10 @@ function init() {
 
   // Initialize BotEditorService
   BotEditorService.init();
+
+  // Initialize LorebookService
+  LorebookService.init();
+  setupLorebookListeners();
 
   // Load saved configurations
   inferenceManager = SettingsService.loadSavedApiConfig(InferenceManager);
@@ -810,6 +816,38 @@ async function importAllData(file) {
   } catch (err) {
     console.error('[Import] Data import failed:', err);
     ToastService.error('Import failed: ' + err.message);
+  }
+}
+
+/**
+ * Wire up lorebook UI controls
+ */
+function setupLorebookListeners() {
+  const fileInput = document.getElementById('lorebookFileInput');
+  const uploadBtn = document.getElementById('lorebookUploadBtn');
+  const closeBtn = document.getElementById('lorebookEntryDialogClose');
+  const dialog = document.getElementById('lorebookEntryDialog');
+
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        await LorebookService.handleFileUpload(file);
+      }
+      fileInput.value = '';
+    });
+  }
+
+  if (closeBtn && dialog) {
+    closeBtn.addEventListener('click', () => dialog.classList.remove('active'));
+  }
+
+  // Close lorebook entry dialog when clicking outside
+  if (dialog) {
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.classList.remove('active');
+    });
   }
 }
 

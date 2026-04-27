@@ -254,6 +254,9 @@
             <button class="sidebar-tab" data-tab="personas-tab" onclick="switchLeftSidebarTab('personas-tab')">
                 <span class="material-symbols-outlined">comedy_mask</span>
             </button>
+            <button class="sidebar-tab" data-tab="lorebook-tab" onclick="switchLeftSidebarTab('lorebook-tab')">
+                <span class="material-symbols-outlined">book_2</span>
+            </button>
         </div>
         <div class="sidebar-content" id="bots-tab-content">
             <div class="bot" id="addBotBtn">
@@ -280,7 +283,17 @@
                 <span class="material-symbols-outlined add">add</span>
                 <p class="persona-name">Add Persona</p>
             </div>
-        </div> 
+        </div>
+        <div class="sidebar-content" id="lorebook-tab-content" style="display: none; padding: 12px 0;">
+            <h4 style="margin: 0 0 6px 0; font-size: 0.95rem; color: var(--text-primary);">Lorebooks</h4>
+            <p id="lorebookActiveBadge" style="font-size: 0.78rem; margin: 0 0 10px 0; color: #888;">No active lorebook</p>
+            <div id="lorebookList" style="flex: 1; overflow-y: auto;"></div>
+            <input type="file" id="lorebookFileInput" accept=".json" style="display: none;">
+            <button class="btn" id="lorebookUploadBtn" style="width: 100%; margin-top: 10px; height: 40px;">
+                <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 6px; font-size: 18px;">upload_file</span>
+                Load Lorebook JSON
+            </button>
+        </div>
     </aside>
 
     <aside class="sidebar sidebar-right" id="rightSidebar">
@@ -569,10 +582,22 @@
         z-index: 10;
     "></div>
 
+    <!-- Lorebook entry viewer dialog -->
+    <div class="dialog-overlay" id="lorebookEntryDialog" style="z-index: 310;">
+        <div class="dialog dialog-large" style="max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                <h3 id="lorebookEntryDialogTitle" style="margin: 0; flex: 1;">Lorebook Entries</h3>
+                <span class="material-symbols-outlined" id="lorebookEntryDialogClose"
+                    style="cursor: pointer; color: #888; font-size: 22px;">close</span>
+            </div>
+            <div id="lorebookEntryList" style="overflow-y: auto; flex: 1; padding-right: 4px;"></div>
+        </div>
+    </div>
+
     <script src="scripts/theme.js?t=1"></script>
     <script src="./scripts/ui/index_ui.js?t=4"></script>
     <script src="./scripts/ui/chatRenderer_inline.js?t=1"></script>
-    <script type="module" src="./scripts/ui/index_modular.js?t=2"></script>
+    <script type="module" src="./scripts/ui/index_modular.js?t=3"></script>
 </body>
 
 </html>

@@ -124,6 +124,17 @@ const MessageService = {
     const customPrompt = document.getElementById("prompt")?.value || "";
     const promptLocation = document.getElementById("promptLocation")?.value || "before";
 
+    // Inject lorebook entries into system message before preprocessing
+    if (window.lorebookService) {
+      const lorebookPrompt = window.lorebookService.buildLorebookPrompt(messages);
+      if (lorebookPrompt && messages.length > 0 && messages[0].role === 'system') {
+        messages = messages.map((m, i) => i === 0
+          ? { ...m, content: m.content + '\n\n' + lorebookPrompt }
+          : m
+        );
+      }
+    }
+
     // Preprocess messages
     const processedMessages = inferenceManager.preprocessChat(
       messages,
@@ -439,9 +450,21 @@ const MessageService = {
     const customPrompt = document.getElementById("prompt")?.value || "";
     const promptLocation = document.getElementById("promptLocation")?.value || "before";
 
+    // Inject lorebook entries into system message before preprocessing
+    let messagesForReroll = messagesToUse;
+    if (window.lorebookService) {
+      const lorebookPrompt = window.lorebookService.buildLorebookPrompt(messagesForReroll);
+      if (lorebookPrompt && messagesForReroll.length > 0 && messagesForReroll[0].role === 'system') {
+        messagesForReroll = messagesForReroll.map((m, i) => i === 0
+          ? { ...m, content: m.content + '\n\n' + lorebookPrompt }
+          : m
+        );
+      }
+    }
+
     // Preprocess messages
     const processedMessages = inferenceManager.preprocessChat(
-      messagesToUse,
+      messagesForReroll,
       rerollArrangement,
       preset,
       contextLength,
