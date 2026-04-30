@@ -35,6 +35,15 @@ export function escapeHTML(text) {
         .replace(/'/g, '&#039;');
 }
 
+export function sanitizeCardContent(html) {
+    if (!html) return '';
+    return html
+        .replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
+        .replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
+        .replace(/\s+on\w+\s*=\s*[^\s>]*/gi, '')
+        .replace(/javascript\s*:/gi, 'blocked:');
+}
+
 export function sanitizeImageUrl(url) {
     if (!url) return '';
     let trimmed = url.trim();
@@ -46,6 +55,16 @@ export function sanitizeImageUrl(url) {
             const match = trimmed.match(/corsproxy\.io\/\?url=(.+)/);
             if (match) {
                 trimmed = decodeURIComponent(match[1]);
+            }
+        } else if (trimmed.includes('api.cors.lol/?url=')) {
+            const match = trimmed.match(/api\.cors\.lol\/\?url=(.+)/);
+            if (match) {
+                trimmed = decodeURIComponent(match[1]);
+            }
+        } else if (trimmed.includes('cors.eu.org/https://') || trimmed.includes('cors.eu.org/http://')) {
+            const match = trimmed.match(/cors\.eu\.org\/(https?:\/\/.+)$/);
+            if (match) {
+                trimmed = match[1];
             }
         } else if (trimmed.includes('corsproxy.io/?')) {
             const afterProxy = trimmed.split('corsproxy.io/?')[1];

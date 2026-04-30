@@ -9,6 +9,7 @@ import {
   transformJannyCard,
   fetchJannyCharacterDetails,
   transformFullJannyCharacter,
+  getJannyCharactersByIds,
 } from "../services/modules/services/jannyApi.js";
 import {
   searchWyvernCharacters,
@@ -37,9 +38,76 @@ import {
   transformFullBackyardCharacter,
 } from "../services/modules/services/backyardApi.js";
 import {
-  proxiedFetch,
-  PROXY_TYPES,
-} from "../services/modules/services/corsProxy.js";
+  searchSpicychat,
+  transformSpicychatCard,
+  getSpicychatCharacter,
+  transformFullSpicychatCharacter,
+} from "../services/modules/services/spicychatApi.js";
+import {
+  searchJoylandBots,
+  transformJoylandCard,
+  getJoylandBot,
+  transformFullJoylandBot,
+} from "../services/modules/services/joylandApi.js";
+import {
+  searchPolybuzzCharacters,
+  transformPolybuzzCard,
+  getPolybuzzCharacter,
+  transformFullPolybuzzCharacter,
+} from "../services/modules/services/polybuzzApi.js";
+import {
+  searchHarpyCharacters,
+  transformHarpyCard,
+  getHarpyCharacter,
+  transformFullHarpyCharacter,
+} from "../services/modules/services/harpyApi.js";
+import {
+  searchXoulCharacters,
+  transformXoulCard,
+  getXoulCharacter,
+  transformFullXoulCharacter,
+} from "../services/modules/services/xoulApi.js";
+import {
+  searchBot3Characters,
+  transformBot3Card,
+  getBot3Character,
+  transformFullBot3Character,
+} from "../services/modules/services/bot3Api.js";
+import {
+  searchBotify,
+  transformBotifyCard,
+  getBotifyBot,
+  transformFullBotifyBot,
+} from "../services/modules/services/botifyApi.js";
+import {
+  searchCaibotlistCharacters,
+  transformCaibotlistCard,
+  getCaibotlistCharacter,
+  transformFullCaibotlistCharacter,
+} from "../services/modules/services/caibotlistApi.js";
+import {
+  searchCrushonCharacters,
+  transformCrushonCard,
+  getCrushonCharacter,
+  transformFullCrushonCharacter,
+} from "../services/modules/services/crushonApi.js";
+import {
+  searchCharavaultCards,
+  transformCharavaultCard,
+  getCharavaultCard,
+} from "../services/modules/services/charavaultApi.js";
+import {
+  searchTalkieCharacters,
+  transformTalkieCard,
+  getTalkieCharacter,
+  transformFullTalkieCharacter,
+} from "../services/modules/services/talkieApi.js";
+import {
+  searchSaucepanCompanions,
+  transformSaucepanCard,
+  getSaucepanCompanion,
+  transformFullSaucepanCompanion,
+} from "../services/modules/services/saucepanApi.js";
 import { StorageManager } from "../storageManager.js";
 
 const storageManager = new StorageManager();
@@ -49,7 +117,7 @@ const returnUrl = urlParams.get("returnUrl") || "index.html";
 
 window.returnUrl = returnUrl;
 
-let currentSource = "chub";
+let currentSource = "jannyai";
 let currentCards = [];
 let currentPage = 1;
 let isLoading = false;
@@ -119,10 +187,6 @@ function renderCards(cards) {
         const cardId = cardEl.dataset.cardId;
         const card = cards.find((c) => c.id === cardId);
         addBot(card, e.target);
-      } else {
-        const cardId = cardEl.dataset.cardId;
-        const card = cards.find((c) => c.id === cardId);
-        console.log("Card clicked:", card);
       }
     });
   });
@@ -134,107 +198,114 @@ async function addBot(card, btn) {
   btn.disabled = true;
 
   try {
-    console.log('[Bot Browser] Adding bot, card data:', card);
-    
     let fullCard = null;
 
-    // Fetch full character data from the respective service
     try {
-      if (card.isJannyAI || card.service === 'jannyai') {
-        console.log('[Bot Browser] Fetching JannyAI full character:', card.id, card.slug);
-        const data = await fetchJannyCharacterDetails(card.id, card.slug);
-        console.log('[Bot Browser] JannyAI full data:', data);
-        fullCard = transformFullJannyCharacter(data);
-        console.log('[Bot Browser] JannyAI transformed fullCard:', fullCard);
-      } else if (card.isChub || card.service === 'chub') {
-        console.log('[Bot Browser] Fetching Chub full character:', card.fullPath);
-        const data = await getChubCharacter(card.fullPath);
-        console.log('[Bot Browser] Chub full data:', data);
-        fullCard = transformFullChubCharacter(data);
-        console.log('[Bot Browser] Chub transformed fullCard:', fullCard);
-      } else if (card.isPygmalion || card.service === 'pygmalion') {
-        console.log('[Bot Browser] Fetching Pygmalion full character:', card.id);
-        const data = await getPygmalionCharacter(card.id);
-        console.log('[Bot Browser] Pygmalion full data:', data);
-        fullCard = transformFullPygmalionCharacter(data);
-        console.log('[Bot Browser] Pygmalion transformed fullCard:', fullCard);
-      } else if (card.isRisuRealm || card.service === 'risuai_realm') {
-        console.log('[Bot Browser] Fetching RisuRealm full character:', card.id);
-        const data = await fetchRisuRealmCharacter(card.id);
-        console.log('[Bot Browser] RisuRealm full data:', data);
-        fullCard = transformFullRisuRealmCharacter(data);
-        console.log('[Bot Browser] RisuRealm transformed fullCard:', fullCard);
-      } else if (card.isBackyard || card.service === 'backyard') {
-        console.log('[Bot Browser] Fetching Backyard full character:', card.characterConfigId || card.id);
-        const configId = card.characterConfigId || card.id;
-        const data = await getBackyardCharacter(configId);
-        console.log('[Bot Browser] Backyard full data:', data);
-        fullCard = transformFullBackyardCharacter(data);
-        console.log('[Bot Browser] Backyard transformed fullCard:', fullCard);
-      } else {
-        console.log('[Bot Browser] No matching service, using search data. Card flags:', {
-          isJannyAI: card.isJannyAI,
-          isChub: card.isChub,
-          isPygmalion: card.isPygmalion,
-          isRisuRealm: card.isRisuRealm,
-          isBackyard: card.isBackyard,
-          service: card.service
-        });
+      const svc = card.service;
+      if (svc === "jannyai" || card.isJannyAI) {
+        // Try HTML scrape first (needs proxy that can bypass Cloudflare).
+        // Fall back to the JSON API endpoint which returns a richer payload
+        // than the search result without needing to touch the CF-protected page.
+        try {
+          fullCard = transformFullJannyCharacter(
+            await fetchJannyCharacterDetails(card.id, card.slug)
+          );
+        } catch {
+          const apiResults = await getJannyCharactersByIds(card.id);
+          if (apiResults && apiResults.length > 0) {
+            fullCard = transformFullJannyCharacter({ character: apiResults[0] });
+          }
+        }
+      } else if (svc === "chub" || card.isChub) {
+        fullCard = transformFullChubCharacter(
+          await getChubCharacter(card.fullPath)
+        );
+      } else if (svc === "pygmalion" || card.isPygmalion) {
+        fullCard = transformFullPygmalionCharacter(
+          await getPygmalionCharacter(card.id)
+        );
+      } else if (svc === "risuai_realm" || card.isRisuRealm) {
+        fullCard = transformFullRisuRealmCharacter(
+          await fetchRisuRealmCharacter(card.id)
+        );
+      } else if (svc === "backyard" || card.isBackyard) {
+        fullCard = transformFullBackyardCharacter(
+          await getBackyardCharacter(card.characterConfigId || card.id)
+        );
+      } else if (svc === "spicychat" || card.isSpicychat) {
+        fullCard = transformFullSpicychatCharacter(
+          await getSpicychatCharacter(card.id)
+        );
+      } else if (svc === "joyland" || card.isJoyland) {
+        fullCard = transformFullJoylandBot(await getJoylandBot(card.id));
+      } else if (svc === "polybuzz" || card.isPolybuzz) {
+        fullCard = transformFullPolybuzzCharacter(
+          await getPolybuzzCharacter(card.id)
+        );
+      } else if (svc === "harpy" || card.isHarpy) {
+        fullCard = transformFullHarpyCharacter(
+          await getHarpyCharacter(card.id)
+        );
+      } else if (svc === "xoul" || card.isXoul) {
+        fullCard = transformFullXoulCharacter(
+          await getXoulCharacter(card.slug || card.id)
+        );
+      } else if (svc === "bot3" || card.isBot3) {
+        fullCard = transformFullBot3Character(
+          await getBot3Character(card.id)
+        );
+      } else if (svc === "botify" || card.isBotify) {
+        fullCard = transformFullBotifyBot(await getBotifyBot(card.id));
+      } else if (svc === "caibotlist" || card.isCaibotlist) {
+        fullCard = transformFullCaibotlistCharacter(
+          await getCaibotlistCharacter(card.id)
+        );
+      } else if (svc === "crushon" || card.isCrushon) {
+        fullCard = transformFullCrushonCharacter(
+          await getCrushonCharacter(card.id)
+        );
+      } else if (svc === "charavault" || card.isCharaVault) {
+        const [folder, file] = card.id.split("/");
+        fullCard = await getCharavaultCard(folder, file);
+      } else if (svc === "talkie" || card.isTalkie) {
+        fullCard = transformFullTalkieCharacter(
+          await getTalkieCharacter(card.id)
+        );
+      } else if (svc === "saucepan" || card.isSaucepan) {
+        fullCard = transformFullSaucepanCompanion(
+          await getSaucepanCompanion(card.id)
+        );
       }
-      // Wyvern, Character Tavern, and others don't have detail APIs - use search data
     } catch (fetchError) {
-      console.warn('[Bot Browser] Failed to fetch full character data, using search data:', fetchError.message);
+      console.warn("[Bot Browser] Failed to fetch full character data, using search data:", fetchError.message);
     }
 
-    // Use full card data if available, otherwise fall back to search data
     const charData = fullCard || card;
-    console.log('[Bot Browser] Final charData to save:', charData);
 
     const characterData = {
       name: charData.name,
       description: charData.description,
       personality: charData.personality,
       scenario: charData.scenario,
-      first_mes: charData.first_mes || charData.firstMessage,
-      mes_example: charData.mes_example || charData.exampleMessage,
-      system_prompt: charData.system_prompt,
-      creator: charData.creator,
-      creator_notes: charData.creator_notes,
+      first_mes: charData.first_mes || charData.first_message || charData.firstMessage || '',
+      mes_example: charData.mes_example || charData.example_messages || charData.exampleMessage || charData.exampleDialogs || '',
+      system_prompt: charData.system_prompt || '',
+      creator: charData.creator || '',
+      creator_notes: charData.creator_notes || charData.website_description || '',
       tags: charData.tags || [],
       extensions: charData.extensions || {},
       alternate_greetings: charData.alternate_greetings || [],
     };
-    console.log('[Bot Browser] Final characterData to store:', characterData);
 
-    const botId = await storageManager.saveBotFromJson(
+    await storageManager.saveBotFromJson(
       characterData,
       charData.avatar_url || charData.image_url || card.avatar_url || card.image_url,
     );
-    console.log("Bot saved with ID:", botId);
 
     btn.textContent = "Added!";
     btn.style.backgroundColor = "#22c55e";
 
-    // Show debug info in alert for inspection
-    const debugInfo = {
-      savedId: botId,
-      name: characterData.name,
-      hasFirstMes: !!characterData.first_mes,
-      hasDescription: !!characterData.description,
-      hasPersonality: !!characterData.personality,
-      hasScenario: !!characterData.scenario,
-      hasMesExample: !!characterData.mes_example,
-      hasSystemPrompt: !!characterData.system_prompt,
-      hasAltGreetings: (characterData.alternate_greetings || []).length > 0,
-      usedFullData: !!fullCard,
-      service: card.service || 'unknown'
-    };
-    console.log('[Bot Browser] Debug info:', debugInfo);
-    
-    // Longer delay to allow inspecting console
-    await new Promise(resolve => setTimeout(resolve, 30000));
-    
-    window.location.href = returnUrl;
+    setTimeout(() => { window.location.href = returnUrl; }, 800);
   } catch (error) {
     console.error("Error adding bot:", error);
     btn.textContent = originalText;
@@ -261,64 +332,80 @@ async function searchSource(source, query, page = 1) {
 
     switch (source) {
       case "chub":
-        result = await searchChubCards({
-          search: query,
-          page: page,
-          limit: limit,
-          nsfw: nsfw,
-        });
+        result = await searchChubCards({ search: query, page, limit, nsfw });
         return (result.nodes || []).map(transformChubCard);
 
       case "jannyai":
-        result = await searchJannyCharacters({
-          search: query,
-          page: page,
-          limit: limit,
-          nsfw: nsfw,
-        });
-        const hits = result?.results?.[0]?.hits || [];
-        return hits.map(transformJannyCard);
+        result = await searchJannyCharacters({ search: query, page, limit, nsfw });
+        return (result?.results?.[0]?.hits || []).map(transformJannyCard);
 
       case "wyvern":
-        result = await searchWyvernCharacters({
-          search: query,
-          page: page,
-          limit: limit,
-          hideNsfw: !nsfw,
-        });
+        result = await searchWyvernCharacters({ search: query, page, limit, hideNsfw: !nsfw });
         return (result.results || []).map(transformWyvernCard);
 
       case "pygmalion":
-        result = await searchPygmalionCharacters({
-          query: query,
-          page: page,
-          pageSize: limit,
-          includeSensitive: nsfw,
-        });
+        result = await searchPygmalionCharacters({ query, page, pageSize: limit, includeSensitive: nsfw });
         return (result.characters || []).map(transformPygmalionCard);
 
       case "character_tavern":
-        result = await searchCharacterTavern({
-          query: query,
-          page: page,
-          limit: limit,
-        });
+        result = await searchCharacterTavern({ query, page, limit });
         return result || [];
 
       case "risuai_realm":
-        result = await searchRisuRealm({
-          search: query,
-          page: page,
-          nsfw: nsfw,
-        });
+        result = await searchRisuRealm({ search: query, page, nsfw });
         return (result.cards || []).map(transformRisuRealmCard);
 
       case "backyard":
-        result = await browseBackyardCharacters({
-          type: nsfw ? "all" : "sfw",
-          search: query,
-        });
+        result = await browseBackyardCharacters({ type: nsfw ? "all" : "sfw", search: query });
         return (result.characters || []).map(transformBackyardCard);
+
+      case "spicychat":
+        result = await searchSpicychat({ search: query, page, limit, nsfw });
+        return (result.characters || result.results || []).map(transformSpicychatCard);
+
+      case "joyland":
+        result = await searchJoylandBots({ query, page, limit });
+        return (result.bots || result.results || []).map(transformJoylandCard);
+
+      case "polybuzz":
+        result = await searchPolybuzzCharacters({ query, page, limit });
+        return (result.characters || result.results || []).map(transformPolybuzzCard);
+
+      case "harpy":
+        result = await searchHarpyCharacters({ query, page, limit });
+        return (result.cards || result.results || []).map(transformHarpyCard);
+
+      case "xoul":
+        result = await searchXoulCharacters({ query, page, limit });
+        return (result.xouls || result.results || []).map(transformXoulCard);
+
+      case "bot3":
+        result = await searchBot3Characters({ query, page, limit });
+        return (result.bots || result.results || []).map(transformBot3Card);
+
+      case "botify":
+        result = await searchBotify({ query, page, limit });
+        return (result.bots || result.results || []).map(transformBotifyCard);
+
+      case "caibotlist":
+        result = await searchCaibotlistCharacters({ query, page, limit });
+        return (result.characters || result.results || []).map(transformCaibotlistCard);
+
+      case "crushon":
+        result = await searchCrushonCharacters({ query, page, limit, nsfw });
+        return (result.characters || result.results || []).map(transformCrushonCard);
+
+      case "charavault":
+        result = await searchCharavaultCards({ query, page, limit, nsfw });
+        return (result.cards || result.results || []).map(transformCharavaultCard);
+
+      case "talkie":
+        result = await searchTalkieCharacters({ query, page, limit });
+        return (result.npcs || result.results || []).map(transformTalkieCard);
+
+      case "saucepan":
+        result = await searchSaucepanCompanions({ query, page, limit });
+        return (result.companions || result.results || []).map(transformSaucepanCard);
 
       default:
         return [];
@@ -346,7 +433,6 @@ sourceBtns.forEach((btn) => {
     sourceBtns.forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     currentSource = btn.dataset.source;
-
     loadCards(searchInput.value.trim(), 1);
   });
 });

@@ -12,7 +12,7 @@ import {
     getWyvernApiState, getWyvernLorebooksApiState
 } from './wyvernApi.js';
 
-const baseUrl = 'https://raw.githubusercontent.com/mia13165/updated_cards/main';
+const baseUrl = 'https://raw.githubusercontent.com/infdevv/BotBrowser-NoStealer/master';
 
 // Storage for loaded data
 const loadedData = {

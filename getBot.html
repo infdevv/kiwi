@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles/getBot.css">
     <script src="scripts/theme.js"></script>
+    <script>
+        // Tell the NoStealer proxy layer to use public CORS relays as fallbacks.
+        // Without this, the corsProxy module only tries Puter.js (since the
+        // SillyTavern plugin is not present), and all API calls fail silently.
+        window.__BOT_BROWSER_ALLOW_PUBLIC_RELAY_FALLBACK = true;
+        // Skip the plugin probe fetch entirely — there is no ST plugin here.
+        window.__BOT_BROWSER_PLUGIN_STATUS = 'missing';
+    </script>
 </head>
 
 <body>
@@ -30,6 +38,20 @@
                 <button class="source-btn" data-source="character_tavern">Character Tavern</button>
                 <button class="source-btn" data-source="risuai_realm">RisuAI Realm</button>
                 <button class="source-btn" data-source="backyard">Backyard</button>
+                <button class="source-btn" data-source="chub">Chub</button>
+                <button class="source-btn" data-source="wyvern">Wyvern</button>
+                <button class="source-btn" data-source="spicychat">Spicychat</button>
+                <button class="source-btn" data-source="joyland">Joyland</button>
+                <button class="source-btn" data-source="polybuzz">Polybuzz</button>
+                <button class="source-btn" data-source="harpy">Harpy</button>
+                <button class="source-btn" data-source="xoul">Xoul</button>
+                <button class="source-btn" data-source="bot3">Bot3</button>
+                <button class="source-btn" data-source="botify">Botify</button>
+                <button class="source-btn" data-source="caibotlist">Caibotlist</button>
+                <button class="source-btn" data-source="crushon">Crushon</button>
+                <button class="source-btn" data-source="charavault">CharaVault</button>
+                <button class="source-btn" data-source="talkie">Talkie</button>
+                <button class="source-btn" data-source="saucepan">Saucepan</button>
             </div>
         </div>
 
