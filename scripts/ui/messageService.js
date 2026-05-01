@@ -54,6 +54,7 @@ const MessageService = {
 
     window.isGenerating = true;
     input.value = "";
+    input.style.height = "auto";
     input.disabled = true;
 
     // Change button to stop button
@@ -155,6 +156,7 @@ const MessageService = {
     const chatContainer = document.querySelector(".chat-container");
 
     let responseText = "";
+    let thinkingText = "";
     let wasAborted = false;
 
     try {
@@ -182,7 +184,12 @@ const MessageService = {
 
               try {
                 const parsed = JSON.parse(data);
+                const thinkingDelta = parsed.choices?.[0]?.delta?.reasoning_content || "";
                 const delta = parsed.choices?.[0]?.delta?.content || "";
+                if (thinkingDelta) {
+                  thinkingText += thinkingDelta;
+                  window.chatRenderer.updateThinkingContent(aiMessageDiv, thinkingText, true);
+                }
                 responseText += delta;
                 window.chatRenderer.updateStreamingMessage(aiMessageDiv, responseText);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -199,6 +206,7 @@ const MessageService = {
         // Finalize the streaming message with full markdown rendering
         if (!wasAborted || responseText.trim()) {
           window.chatRenderer.finalizeStreamingMessage(aiMessageDiv, responseText);
+          window.chatRenderer.finalizeThinkingContent(aiMessageDiv, thinkingText);
         } else {
           // Remove the placeholder message if nothing was generated
           aiMessageDiv.remove();
@@ -211,7 +219,10 @@ const MessageService = {
         );
 
         responseText = response.choices?.[0]?.message?.content || "No response";
+        thinkingText = response.choices?.[0]?.message?.reasoning_content || "";
+        if (thinkingText) window.chatRenderer.updateThinkingContent(aiMessageDiv, thinkingText, false);
         window.chatRenderer.finalizeStreamingMessage(aiMessageDiv, responseText);
+        window.chatRenderer.finalizeThinkingContent(aiMessageDiv, thinkingText);
       }
 
       // Only save if we have content and weren't aborted
@@ -483,6 +494,7 @@ const MessageService = {
     }
 
     let responseText = "";
+    let thinkingText = "";
 
     try {
       // Check if streaming is enabled
@@ -506,7 +518,12 @@ const MessageService = {
 
               try {
                 const parsed = JSON.parse(data);
+                const thinkingDelta = parsed.choices?.[0]?.delta?.reasoning_content || "";
                 const delta = parsed.choices?.[0]?.delta?.content || "";
+                if (thinkingDelta) {
+                  thinkingText += thinkingDelta;
+                  window.chatRenderer.updateThinkingContent(messageElement, thinkingText, true);
+                }
                 responseText += delta;
                 if (textSpan) {
                   window.chatRenderer.renderMessage(textSpan, responseText, true);
@@ -522,6 +539,7 @@ const MessageService = {
           window.chatRenderer.renderMessage(textSpan, responseText, false);
           window.chatRenderer.attachCopyButtonListeners(textSpan);
         }
+        window.chatRenderer.finalizeThinkingContent(messageElement, thinkingText);
       } else {
         const response = await inferenceManager.generateResponse(
           processedMessages,
@@ -530,10 +548,13 @@ const MessageService = {
         );
 
         responseText = response.choices?.[0]?.message?.content || "No response";
+        thinkingText = response.choices?.[0]?.message?.reasoning_content || "";
+        if (thinkingText) window.chatRenderer.updateThinkingContent(messageElement, thinkingText, false);
         if (textSpan) {
           window.chatRenderer.renderMessage(textSpan, responseText, false);
           window.chatRenderer.attachCopyButtonListeners(textSpan);
         }
+        window.chatRenderer.finalizeThinkingContent(messageElement, thinkingText);
       }
 
       // Store the new version

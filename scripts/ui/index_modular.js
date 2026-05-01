@@ -665,12 +665,19 @@ function setupChatListeners() {
   }
 
   if (messageInput) {
-    messageInput.addEventListener("keypress", (e) => {
+    messageInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         MessageService.sendMessage(storageManager, inferenceManagerRef.current);
       }
     });
+
+    // Auto-resize textarea
+    function autoResize() {
+      messageInput.style.height = "auto";
+      messageInput.style.height = Math.min(messageInput.scrollHeight, 160) + "px";
+    }
+    messageInput.addEventListener("input", autoResize);
 
     // Token counter
     const tokenCounter = document.getElementById("tokenCounter");
@@ -825,6 +832,7 @@ async function importAllData(file) {
 function setupLorebookListeners() {
   const fileInput = document.getElementById('lorebookFileInput');
   const uploadBtn = document.getElementById('lorebookUploadBtn');
+  const createBtn = document.getElementById('lorebookCreateBtn');
   const closeBtn = document.getElementById('lorebookEntryDialogClose');
   const dialog = document.getElementById('lorebookEntryDialog');
 
@@ -839,14 +847,27 @@ function setupLorebookListeners() {
     });
   }
 
+  if (createBtn) {
+    createBtn.addEventListener('click', () => {
+      const idx = LorebookService.createLorebook('New Lorebook');
+      LorebookService._openEditor(idx);
+    });
+  }
+
   if (closeBtn && dialog) {
-    closeBtn.addEventListener('click', () => dialog.classList.remove('active'));
+    closeBtn.addEventListener('click', () => {
+      dialog.classList.remove('active');
+      LorebookService._editingIndex = -1;
+    });
   }
 
   // Close lorebook entry dialog when clicking outside
   if (dialog) {
     dialog.addEventListener('click', (e) => {
-      if (e.target === dialog) dialog.classList.remove('active');
+      if (e.target === dialog) {
+        dialog.classList.remove('active');
+        LorebookService._editingIndex = -1;
+      }
     });
   }
 }

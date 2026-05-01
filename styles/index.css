@@ -3,7 +3,7 @@
  */
 
 @import url("./base.css");
-@import url("./layout.css");
+@import url("./layout.css?t=2");
 @import url("./sidebar.css");
-@import url("./components.css");
+@import url("./components.css?t=2");
 @import url("./theme-customization.css");

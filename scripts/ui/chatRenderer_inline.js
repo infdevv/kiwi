@@ -108,6 +108,50 @@ class ChatRendererInline {
     } catch (_) { return false; }
   }
 
+  isShowThinkingEnabled() {
+    try {
+      const s = JSON.parse(localStorage.getItem('kiwi_generation_settings') || '{}');
+      return s.showThinking === true;
+    } catch (_) { return false; }
+  }
+
+  getOrCreateThinkingSection(messageElement) {
+    const contentDiv = messageElement.querySelector('.message-content');
+    if (!contentDiv) return null;
+    let section = contentDiv.querySelector('.thinking-section');
+    if (!section) {
+      section = document.createElement('details');
+      section.className = 'thinking-section';
+      const summary = document.createElement('summary');
+      summary.textContent = 'Thinking';
+      const content = document.createElement('div');
+      content.className = 'thinking-content';
+      section.appendChild(summary);
+      section.appendChild(content);
+      const textSpan = contentDiv.querySelector('.message-text');
+      contentDiv.insertBefore(section, textSpan);
+    }
+    return section;
+  }
+
+  updateThinkingContent(messageElement, thinkingText, isStreaming = true) {
+    if (!thinkingText || !this.isShowThinkingEnabled()) return;
+    const section = this.getOrCreateThinkingSection(messageElement);
+    if (!section) return;
+    const content = section.querySelector('.thinking-content');
+    if (content) content.textContent = thinkingText;
+    if (isStreaming) section.open = true;
+  }
+
+  finalizeThinkingContent(messageElement, thinkingText) {
+    if (!thinkingText || !this.isShowThinkingEnabled()) return;
+    const section = this.getOrCreateThinkingSection(messageElement);
+    if (!section) return;
+    const content = section.querySelector('.thinking-content');
+    if (content) content.textContent = thinkingText;
+    section.open = false;
+  }
+
   renderMessage(container, text, isStreaming = false) {
     if (!container) return;
     if (this.isHtmlRenderingEnabled()) {
@@ -138,7 +182,7 @@ class ChatRendererInline {
     });
   }
 
-  createMessageElement(role, text, avatarUrl, name, messageId = null, messageIndex = null, versions = null, currentVersionIndex = null) {
+  createMessageElement(role, text, avatarUrl, name, messageId = null, messageIndex = null, versions = null, currentVersionIndex = null, thinkingText = null) {
     console.log('[ChatRendererInline.createMessageElement] CALLED with role:', role, 'messageIndex:', messageIndex);
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role === 'user' ? 'user-message' : 'ai-message'}`;
@@ -165,9 +209,27 @@ class ChatRendererInline {
     const textSpan = document.createElement('span');
     textSpan.className = 'message-text';
 
-    this.renderMessage(textSpan, text, false);
+    if (role === 'user') {
+      textSpan.innerHTML = this.renderMarkdown(text);
+    } else {
+      this.renderMessage(textSpan, text, false);
+    }
 
     contentDiv.appendChild(namePara);
+
+    if (thinkingText && this.isShowThinkingEnabled()) {
+      const thinkingSection = document.createElement('details');
+      thinkingSection.className = 'thinking-section';
+      const summary = document.createElement('summary');
+      summary.textContent = 'Thinking';
+      const thinkingContent = document.createElement('div');
+      thinkingContent.className = 'thinking-content';
+      thinkingContent.textContent = thinkingText;
+      thinkingSection.appendChild(summary);
+      thinkingSection.appendChild(thinkingContent);
+      contentDiv.appendChild(thinkingSection);
+    }
+
     contentDiv.appendChild(textSpan);
 
     // Add action buttons

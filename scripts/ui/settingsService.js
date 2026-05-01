@@ -56,6 +56,7 @@ const SettingsService = {
       presencePenalty: document.getElementById("presencePenalty").value,
       arrangement: document.getElementById("arrangement")?.value ?? "0",
       htmlRendering: document.getElementById("htmlRenderingToggle")?.checked ?? false,
+      showThinking: document.getElementById("showThinkingToggle")?.checked ?? false,
     };
 
     localStorage.setItem(
@@ -171,6 +172,9 @@ const SettingsService = {
       const htmlToggle = document.getElementById("htmlRenderingToggle");
       if (htmlToggle && settings.htmlRendering !== undefined)
         htmlToggle.checked = settings.htmlRendering;
+      const thinkingToggle = document.getElementById("showThinkingToggle");
+      if (thinkingToggle && settings.showThinking !== undefined)
+        thinkingToggle.checked = settings.showThinking;
     }
   },
 
@@ -254,6 +258,10 @@ const SettingsService = {
     const htmlRenderingToggle = document.getElementById("htmlRenderingToggle");
     if (htmlRenderingToggle) {
       htmlRenderingToggle.addEventListener("change", () => this.saveGenerationSettings());
+    }
+    const showThinkingToggle = document.getElementById("showThinkingToggle");
+    if (showThinkingToggle) {
+      showThinkingToggle.addEventListener("change", () => this.saveGenerationSettings());
     }
 
     // LLM settings auto-save

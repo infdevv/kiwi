@@ -8,7 +8,7 @@
 
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <link rel="stylesheet" href="styles/index.css?t=9">
+    <link rel="stylesheet" href="styles/index.css?t=10">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
     <script type="module">
         import { marked } from 'https://cdn.jsdelivr.net/npm/marked@12.0.0/+esm';
@@ -293,6 +293,10 @@
                 <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 6px; font-size: 18px;">upload_file</span>
                 Load Lorebook JSON
             </button>
+            <button class="btn" id="lorebookCreateBtn" style="width: 100%; margin-top: 8px; height: 40px;">
+                <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 6px; font-size: 18px;">add</span>
+                Create New Lorebook
+            </button>
         </div>
     </aside>
 
@@ -376,6 +380,13 @@
                             <span class="slider"></span>
                         </label>
                         <p>Render HTML in responses</p>
+                    </div>
+                    <div class="toggle-container" style="margin-top: 12px;">
+                        <label class="switch">
+                            <input type="checkbox" id="showThinkingToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <p>Show thinking / reasoning</p>
                     </div>
                 </div>
             </div>
@@ -566,7 +577,7 @@
     </div>
 
     <div class="bottom-controls">
-        <input placeholder="Send a message" id="messageInput">
+        <textarea placeholder="Send a message" id="messageInput" rows="1"></textarea>
         <span class="material-symbols-outlined btn" id="sendBtn">
             send
         </span>
@@ -582,22 +593,34 @@
         z-index: 10;
     "></div>
 
-    <!-- Lorebook entry viewer dialog -->
+    <!-- Lorebook editor dialog -->
     <div class="dialog-overlay" id="lorebookEntryDialog" style="z-index: 310;">
-        <div class="dialog dialog-large" style="max-height: 80vh; display: flex; flex-direction: column;">
-            <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                <h3 id="lorebookEntryDialogTitle" style="margin: 0; flex: 1;">Lorebook Entries</h3>
+        <div class="dialog dialog-large" style="max-height: 85vh; display: flex; flex-direction: column; gap: 0;">
+            <!-- Header row -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-shrink: 0;">
+                <input id="lorebookEditorName" type="text" placeholder="Lorebook name"
+                    style="flex:1; background:transparent; border:none; border-bottom:1px solid var(--border-light);
+                           color:var(--text-primary); font-size:1.05rem; font-weight:600; padding:4px 0; outline:none;">
+                <button id="lorebookAddEntryBtn" class="btn" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap; height:34px;">
+                    <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; margin-right:4px;">add</span>Add Entry
+                </button>
+                <button id="lorebookExportBtn" class="btn" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap; height:34px;">
+                    <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; margin-right:4px;">file_download</span>Export
+                </button>
                 <span class="material-symbols-outlined" id="lorebookEntryDialogClose"
-                    style="cursor: pointer; color: #888; font-size: 22px;">close</span>
+                    style="cursor:pointer; color:#888; font-size:22px; flex-shrink:0;">close</span>
             </div>
+            <!-- Entry count badge -->
+            <p id="lorebookEditorMeta" style="font-size:0.78rem; color:#888; margin:0 0 10px 0; flex-shrink:0;"></p>
+            <!-- Entry list -->
             <div id="lorebookEntryList" style="overflow-y: auto; flex: 1; padding-right: 4px;"></div>
         </div>
     </div>
 
     <script src="scripts/theme.js?t=1"></script>
     <script src="./scripts/ui/index_ui.js?t=4"></script>
-    <script src="./scripts/ui/chatRenderer_inline.js?t=1"></script>
-    <script type="module" src="./scripts/ui/index_modular.js?t=3"></script>
+    <script src="./scripts/ui/chatRenderer_inline.js?t=2"></script>
+    <script type="module" src="./scripts/ui/index_modular.js?t=4"></script>
 </body>
 
 </html>
